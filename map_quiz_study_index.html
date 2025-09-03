@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Map Quiz Studio – Image‑Based Practice</title>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#121835; --muted:#1a2250; --text:#e7ecff; --accent:#7aa2ff; --good:#34d399; --bad:#ef4444; --warn:#f59e0b;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; background:radial-gradient(1200px 800px at 20% -10%,#1a224a 0%, rgba(26,34,74,0) 60%), var(--bg); color:var(--text); font:500 15px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+    .app{display:grid; grid-template-columns: 340px 1fr; gap:18px; height:100%; padding:18px;}
+    header{grid-column: 1 / -1; display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:linear-gradient(180deg, rgba(122,162,255,.25), transparent); border:1px solid rgba(122,162,255,.25); border-radius: var(--radius); box-shadow: var(--shadow)}
+    h1{font-size:18px; letter-spacing:.2px; margin:0; display:flex; align-items:center; gap:10px}
+    h1 .dot{width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 12px var(--accent)}
+
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.2)); border:1px solid rgba(122,162,255,.15); border-radius:var(--radius); box-shadow: var(--shadow)}
+    .left{display:flex; flex-direction:column; gap:14px; padding:14px;}
+
+    .group{background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:12px}
+    .group h3{margin:0 0 8px; font-size:13px; text-transform:uppercase; letter-spacing:.12em; color:#bcd2ff}
+
+    .controls{display:grid; grid-template-columns: 1fr 1fr; gap:8px}
+    .controls .row{grid-column:1/-1; display:flex; gap:8px}
+
+    .btn{appearance:none; border:none; background:linear-gradient(180deg, #223066, #1a2550); color:var(--text); padding:10px 12px; border-radius:12px; cursor:pointer; transition:.2s transform, .2s box-shadow, .2s background; box-shadow: 0 6px 14px rgba(0,0,0,.25); font-weight:600}
+    .btn:hover{transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0,0,0,.32)}
+    .btn:active{transform: translateY(0)}
+    .btn.secondary{background:linear-gradient(180deg, #1b244a, #141a39)}
+    .btn.good{background:linear-gradient(180deg, #2aa56a, #1f7e52)}
+    .btn.bad{background:linear-gradient(180deg, #b03838, #8a2c2c)}
+    .btn.warn{background:linear-gradient(180deg, #b47a23, #8a5e1b)}
+    .btn.ghost{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12)}
+
+    input[type="file"]{display:none}
+    label.file{display:inline-flex; align-items:center; gap:8px}
+
+    .chips{display:flex; flex-wrap:wrap; gap:6px}
+    .chip{background:rgba(122,162,255,.12); border:1px solid rgba(122,162,255,.25); color:#dbe6ff; padding:6px 10px; border-radius:999px; font-size:12px; cursor:pointer; transition:.2s}
+    .chip:hover{background:rgba(122,162,255,.2)}
+
+    .terms{max-height: 240px; overflow:auto; border-radius: 10px; border:1px solid rgba(255,255,255,.06)}
+    .term{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; background:rgba(255,255,255,.02); border-bottom:1px solid rgba(255,255,255,.06)}
+    .term:last-child{border-bottom:none}
+    .term span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .term .mini{display:flex; gap:6px}
+
+    .right{position:relative; padding:12px}
+    .stage{position:relative; height: calc(100% - 0px); border-radius: var(--radius); overflow:hidden; background:#0a0f22; border:1px solid rgba(122,162,255,.15);}
+    canvas{width:100%; height:100%; display:block; background:#090e20}
+
+    .overlay{position:absolute; inset:0; pointer-events:none; display:flex; align-items:flex-start; justify-content:space-between; padding:12px}
+    .badge{pointer-events:auto; background:rgba(13,20,44,.8); backdrop-filter: blur(3px); border:1px solid rgba(122,162,255,.25); border-radius:12px; padding:10px 12px; display:flex; align-items:center; gap:10px; box-shadow: var(--shadow)}
+    .badge .title{font-weight:700}
+
+    .bottombar{position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px}
+
+    .mode-toggle{display:flex; gap:8px}
+
+    .toast{position:absolute; left:50%; transform:translate(-50%, 20px); bottom:24px; background:rgba(20,28,60,.95); border:1px solid rgba(255,255,255,.12); padding:12px 16px; border-radius:12px; opacity:0; pointer-events:none}
+    .toast.show{animation:toast 1.6s ease forwards}
+    @keyframes toast{0%{opacity:0; transform:translate(-50%, 20px)} 10%,85%{opacity:1; transform:translate(-50%, 0)} 100%{opacity:0; transform:translate(-50%, 20px)}}
+
+    .pin{position:absolute; width:18px; height:18px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 0 rgba(122,162,255,.6); animation:pulse 1.6s infinite; transform:translate(-50%, -100%); border:2px solid white}
+    .pin.quiz{background:#bbb; animation:none}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(122,162,255,.6)} 100%{box-shadow:0 0 0 18px rgba(122,162,255,0)}}
+
+    .flashcard{position:absolute; right:12px; top:12px; width:min(380px, 36%); background:rgba(15,22,50,.92); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:14px; display:none}
+    .flashcard.show{display:block; animation: pop .22s ease}
+    @keyframes pop{from{transform:scale(.98); opacity:0} to{transform:scale(1); opacity:1}}
+    .flashcard h4{margin:0 0 6px}
+    .progress{height:8px; background:rgba(255,255,255,.08); border-radius:999px; overflow:hidden}
+    .progress > div{height:100%; width:0; background:linear-gradient(90deg, var(--accent), #9ad0ff)}
+
+    .shake{animation: shake .25s linear 2}
+    @keyframes shake{0%{transform:translateX(0)} 25%{transform:translateX(-6px)} 50%{transform:translateX(6px)} 75%{transform:translateX(-4px)} 100%{transform:translateX(0)}}
+
+    .pill{padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); font-size:12px}
+    .small{font-size:12px; opacity:.9}
+    .hint{color:#bcd2ff}
+
+    /* Tooltip */
+    .tooltip{position:absolute; transform:translate(-50%, -120%); background:#0f1736; border:1px solid rgba(255,255,255,.15); padding:6px 8px; border-radius:8px; font-size:12px; white-space:nowrap}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="panel">
+      <h1><span class="dot"></span> Map Quiz Studio <span class="small" style="opacity:.65">– build your own image‑based quiz</span></h1>
+      <div style="display:flex; gap:8px; align-items:center">
+        <button class="btn ghost" id="exportBtn" title="Export deck JSON">Export</button>
+        <input id="importInput" type="file" accept="application/json" />
+        <label for="importInput" class="btn ghost">Import</label>
+        <button class="btn bad" id="resetBtn" title="Clear everything">Reset</button>
+      </div>
+    </header>
+
+    <aside class="left panel">
+      <div class="group">
+        <h3>Map image</h3>
+        <div class="controls">
+          <input id="imgInput" type="file" accept="image/*" />
+          <label for="imgInput" class="btn" title="Upload a map image">Upload image</label>
+          <button class="btn secondary" id="fitBtn">Fit to screen</button>
+          <button class="btn secondary" id="clearImgBtn">Remove image</button>
+        </div>
+        <div style="margin-top:8px" class="small hint">Tip: upload your study map (PNG/JPG). In Author mode, click the map to place a pin for a selected term.</div>
+      </div>
+
+      <div class="group">
+        <h3>Modes</h3>
+        <div class="mode-toggle">
+          <button class="btn good" data-mode="author">Author</button>
+          <button class="btn" data-mode="quiz">Quiz</button>
+          <button class="btn" data-mode="flash">Flashcards</button>
+        </div>
+        <div style="margin-top:10px; display:flex; align-items:center; gap:10px">
+          <label class="pill">Tolerance: <span id="tolVal">24</span> px</label>
+          <input id="tol" type="range" min="10" max="60" value="24" />
+        </div>
+        <div style="margin-top:8px" class="small hint">Tolerance controls how close your click must be to count as correct.</div>
+      </div>
+
+      <div class="group">
+        <h3>Terms</h3>
+        <div class="row">
+          <input id="termInput" placeholder="Add a term (e.g., Red Sea)" class="btn ghost" style="width:100%; text-align:left; font-weight:500" />
+          <button class="btn" id="addTerm">Add</button>
+        </div>
+        <div class="chips" style="margin-top:8px">
+          <span class="chip" data-pack="countries">Load Middle East – Countries</span>
+          <span class="chip" data-pack="features">Load Middle East – Features</span>
+          <span class="chip" id="clearTerms">Clear terms</span>
+        </div>
+        <div class="terms" id="termList" style="margin-top:10px"></div>
+      </div>
+
+      <div class="group">
+        <h3>Quiz settings</h3>
+        <div class="controls">
+          <div class="row" style="gap:8px">
+            <button class="btn good" id="startQuiz">Start / Shuffle</button>
+            <button class="btn secondary" id="showPins">Toggle pins</button>
+          </div>
+          <div class="row" style="gap:8px">
+            <button class="btn warn" id="revealBtn">Reveal answer</button>
+            <button class="btn secondary" id="undoBtn">Undo last pin</button>
+          </div>
+        </div>
+        <div class="small hint" style="margin-top:8px">Author mode: select a term, then click map to place its pin. Drag to move (desktop).</div>
+      </div>
+    </aside>
+
+    <main class="right panel">
+      <div class="stage" id="stage">
+        <canvas id="canvas"></canvas>
+        <div class="overlay">
+          <div class="badge">
+            <span class="title" id="modeLabel">Author mode</span>
+            <span class="pill" id="status">No image</span>
+          </div>
+          <div class="badge" id="scoreBox">
+            <span>Score: <b id="score">0</b>/<b id="total">0</b></span>
+            <span class="pill">Streak: <b id="streak">0</b></span>
+          </div>
+        </div>
+        <div class="flashcard" id="flash">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+            <h4 id="fcTerm">Term</h4>
+            <div class="pill" id="fcProgress">0 / 0</div>
+          </div>
+          <div class="progress" style="margin:8px 0 10px"><div id="fcBar"></div></div>
+          <div class="small hint" id="fcHint">Click the map to guess. Press Space to flip / Next.</div>
+          <div style="display:flex; gap:8px; margin-top:8px">
+            <button class="btn good" id="fcKnow">I knew it</button>
+            <button class="btn secondary" id="fcUnsure">Unsure</button>
+            <button class="btn" id="fcNext">Next ▶</button>
+          </div>
+        </div>
+        <div class="bottombar">
+          <div class="badge">
+            <span>Target: <b id="targetName">—</b></span>
+          </div>
+          <div style="display:flex; gap:8px">
+            <button class="btn" id="nextBtn">Next</button>
+          </div>
+        </div>
+        <div class="toast" id="toast"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ====== State ======
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+    const state = {
+      mode: 'author', // 'author' | 'quiz' | 'flash'
+      image: null,
+      imageNatural: {w:0,h:0},
+      pins: {},           // term -> {x:0..1,y:0..1}
+      terms: [],
+      selectedTerm: null,
+      showPins: true,
+      tol: 24,
+      quizOrder: [],
+      quizIndex: 0,
+      score: 0,
+      streak: 0,
+      history: [], // for undo
+    };
+
+    // ====== Canvas setup ======
+    const canvas = $('#canvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas(){
+      const rect = $('#stage').getBoundingClientRect();
+      canvas.width = rect.width; canvas.height = rect.height;
+      draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // ====== Image handling ======
+    const imgEl = new Image();
+    imgEl.onload = () => {
+      state.imageNatural = {w: imgEl.naturalWidth, h: imgEl.naturalHeight};
+      toast('Image loaded');
+      draw();
+      updateStatus();
+    };
+
+    $('#imgInput').addEventListener('change', e=>{
+      const file = e.target.files[0]; if(!file) return;
+      const fr = new FileReader();
+      fr.onload = () => { imgEl.src = fr.result; state.image = fr.result; };
+      fr.readAsDataURL(file);
+    });
+    $('#clearImgBtn').onclick = ()=>{ state.image=null; imgEl.src=''; draw(); updateStatus(); };
+    $('#fitBtn').onclick = ()=>{ draw(); toast('Fitted to screen'); };
+
+    // ====== Terms ======
+    function renderTerms(){
+      const list = $('#termList');
+      list.innerHTML = '';
+      state.terms.forEach(t =>{
+        const row = document.createElement('div');
+        row.className = 'term';
+        row.innerHTML = `<span>${t}</span>
+          <span class="mini">
+            <button class="btn secondary" data-sel="${t}">Select</button>
+            <button class="btn ghost" data-del="${t}">Del</button>
+          </span>`;
+        list.appendChild(row);
+      });
+      $('#total').textContent = state.terms.length;
+      $('#fcProgress').textContent = `${Math.min(state.quizIndex+1,state.terms.length)} / ${state.terms.length}`;
+    }
+
+    function addTerm(t){
+      t = t.trim();
+      if(!t || state.terms.includes(t)) return;
+      state.terms.push(t); renderTerms(); persist();
+    }
+
+    $('#addTerm').onclick = ()=>{ addTerm($('#termInput').value); $('#termInput').value=''; };
+    $('#termInput').addEventListener('keyup', e=>{ if(e.key==='Enter'){ $('#addTerm').click(); }});
+
+    $('#termList').addEventListener('click', e=>{
+      const del = e.target.getAttribute('data-del');
+      const sel = e.target.getAttribute('data-sel');
+      if(del){
+        state.terms = state.terms.filter(x=>x!==del);
+        delete state.pins[del];
+        renderTerms(); draw(); persist();
+      }
+      if(sel){ state.selectedTerm = sel; toast('Selected: '+sel);} 
+    });
+
+    $('#clearTerms').onclick = ()=>{ state.terms=[]; state.pins={}; renderTerms(); draw(); persist(); };
+
+    // Packs
+    const PACKS = {
+      countries:[
+        'Bahrain','Cyprus','Djibouti','Egypt','Eritrea','Ethiopia','Iran','Iraq','Israel','Jordan','Kuwait','Oman','Qatar','Saudi Arabia','Somalia','Sudan','South Sudan','Syria','Turkey','United Arab Emirates','Yemen','Lebanon'
+      ],
+      features:[
+        'Arabian Sea','Black Sea','Caspian Sea','Dead Sea','Euphrates River','Gulf of Aden','Gulf of Oman','Lake Nasser','Mediterranean Sea','Nile River','Persian Gulf','Red Sea','Strait of Hormuz','Suez Canal','Tigris River','Fertile Crescent','Mesopotamia','Sinai Peninsula','Sumer'
+      ]
+    };
+    $$('.chip[data-pack]').forEach(ch=>{
+      ch.addEventListener('click',()=>{
+        const arr = PACKS[ch.dataset.pack];
+        arr.forEach(addTerm);
+        toast('Loaded '+arr.length+' terms');
+      });
+    });
+
+    // ====== Modes ======
+    $$('.mode-toggle .btn').forEach(btn=>{
+      btn.addEventListener('click',()=>setMode(btn.dataset.mode));
+    });
+
+    function setMode(m){
+      state.mode = m; 
+      $('#modeLabel').textContent = m==='author' ? 'Author mode' : m==='quiz' ? 'Quiz mode' : 'Flashcards';
+      $('#flash').classList.toggle('show', m==='flash');
+      draw();
+    }
+
+    // ====== Canvas interaction ======
+    let draggingKey = null;
+
+    canvas.addEventListener('mousedown', onPointerDown);
+    canvas.addEventListener('touchstart', onPointerDown, {passive:false});
+    function getPos(evt){
+      const rect = canvas.getBoundingClientRect();
+      const x = (evt.touches?evt.touches[0].clientX:evt.clientX) - rect.left;
+      const y = (evt.touches?evt.touches[0].clientY:evt.clientY) - rect.top;
+      return {x,y,w:rect.width,h:rect.height};
+    }
+
+    function onPointerDown(evt){
+      evt.preventDefault();
+      const {x,y,w,h} = getPos(evt);
+      if(state.mode==='author'){
+        if(!state.selectedTerm){ toast('Select a term first'); return; }
+        // check if dragging existing pin
+        const key = hitTest(x,y);
+        if(key){ draggingKey = key; return; }
+        placePin(state.selectedTerm, x/w, y/h); 
+        state.history.push({type:'place', term: state.selectedTerm});
+        draw();
+      } else if(state.mode==='quiz'){
+        if(!currentTarget()) { toast('Start quiz first'); return; }
+        const term = currentTarget();
+        const pin = state.pins[term];
+        if(!pin){ toast('No pin for this term yet'); return; }
+        const dx = x - pin.x*canvas.width; const dy = y - pin.y*canvas.height; 
+        const dist = Math.hypot(dx,dy);
+        if(dist <= state.tol){
+          state.score++; state.streak++; 
+          toast('Correct! ✅');
+          confetti(x,y);
+          nextTarget();
+        } else {
+          state.streak = 0;
+          flashShake();
+          toast('Not quite. Try again or Reveal.');
+        }
+        updateScore();
+        draw();
+      } else if(state.mode==='flash'){
+        flipFlash();
+      }
+    }
+
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('touchmove', onPointerMove, {passive:false});
+    window.addEventListener('mouseup', ()=>draggingKey=null);
+    window.addEventListener('touchend', ()=>draggingKey=null);
+    function onPointerMove(evt){
+      if(!draggingKey) return;
+      const {x,y,w,h} = getPos(evt);
+      placePin(draggingKey, x/w, y/h);
+      draw();
+    }
+
+    function hitTest(px,py){
+      for(const [term,p] of Object.entries(state.pins)){
+        const x = p.x*canvas.width, y = p.y*canvas.height;
+        if(Math.hypot(px-x, py-y) < 16) return term;
+      }
+      return null;
+    }
+
+    function placePin(term, nx, ny){
+      state.pins[term] = {x: clamp(nx,0,1), y: clamp(ny,0,1)}; persist();
+    }
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+
+    // ====== Drawing ======
+    function draw(){
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = '#0a0f22';
+      ctx.fillRect(0,0,w,h);
+      if(state.image){
+        // fit image to canvas with contain
+        const rCan = w/h, rImg = state.imageNatural.w/state.imageNatural.h;
+        let dw,dh,dx,dy;
+        if(rImg>rCan){ dw = w; dh = w/rImg; dx = 0; dy = (h-dh)/2; }
+        else { dh = h; dw = h*rImg; dy = 0; dx = (w-dw)/2; }
+        ctx.drawImage(imgEl, dx,dy,dw,dh);
+      } else {
+        ctx.fillStyle = '#0d1533';
+        ctx.fillRect(0,0,w,h);
+        ctx.fillStyle = 'rgba(255,255,255,.08)';
+        ctx.textAlign='center'; ctx.font='600 16px system-ui';
+        ctx.fillText('Upload a map image to begin', w/2, h/2);
+      }
+      if(state.showPins || state.mode==='author'){
+        for(const [term,p] of Object.entries(state.pins)){
+          drawPin(p.x*canvas.width, p.y*canvas.height, term);
+        }
+      } else if(state.mode==='quiz'){
+        // show only target pin in grey for reference? We'll hide to make it challenging.
+      }
+      updateStatus(); updateScore(); updateTargetLabel();
+    }
+
+    function drawPin(x,y, label){
+      // pin circle
+      ctx.save();
+      ctx.fillStyle = 'rgba(122,162,255,1)';
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      // label
+      ctx.font='600 12px system-ui'; ctx.textBaseline='bottom';
+      const pad=6; const textWidth = ctx.measureText(label).width + pad*2;
+      const bx = clamp(x - textWidth/2, 4, canvas.width - textWidth - 4);
+      const by = y - 16;
+      ctx.fillStyle = 'rgba(12,18,44,.85)';
+      roundRect(ctx, bx, by-20, textWidth, 18, 8); ctx.fill();
+      ctx.fillStyle = '#e7ecff'; ctx.textAlign='center';
+      ctx.fillText(label, bx+textWidth/2, by-5);
+      ctx.restore();
+    }
+
+    function roundRect(ctx,x,y,w,h,r){
+      ctx.beginPath();
+      ctx.moveTo(x+r,y);
+      ctx.arcTo(x+w,y,x+w,y+h,r);
+      ctx.arcTo(x+w,y+h,x,y+h,r);
+      ctx.arcTo(x,y+h,x,y,r);
+      ctx.arcTo(x,y,x+w,y,r);
+      ctx.closePath();
+    }
+
+    function updateStatus(){
+      $('#status').textContent = state.image? 'Image ready' : 'No image';
+    }
+
+    function updateScore(){
+      $('#score').textContent = state.score; $('#total').textContent = state.terms.length;
+      $('#streak').textContent = state.streak;
+    }
+
+    function updateTargetLabel(){
+      $('#targetName').textContent = currentTarget() || '—';
+    }
+
+    function toast(msg){
+      const el = $('#toast'); el.textContent = msg; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    }
+
+    function flashShake(){
+      const st = $('#stage'); st.classList.remove('shake'); void st.offsetWidth; st.classList.add('shake');
+    }
+
+    // ====== Quiz logic ======
+    function shuffle(arr){
+      for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+      return arr;
+    }
+
+    function startQuiz(){
+      state.quizOrder = shuffle(state.terms.slice());
+      state.quizIndex = 0; state.score=0; state.streak=0; setMode('quiz');
+      updateTargetLabel(); draw();
+    }
+
+    function currentTarget(){ return state.quizOrder[state.quizIndex]; }
+
+    function nextTarget(){
+      if(state.quizIndex < state.quizOrder.length-1){ state.quizIndex++; }
+      else { toast('Round complete!'); }
+      updateTargetLabel();
+    }
+
+    $('#startQuiz').onclick = startQuiz;
+    $('#nextBtn').onclick = nextTarget;
+    $('#revealBtn').onclick = ()=>{
+      const term = currentTarget(); if(!term) return;
+      const p = state.pins[term]; if(!p) { toast('No pin for this term'); return; }
+      // brief reveal ping
+      revealPing(p.x*canvas.width, p.y*canvas.height);
+    };
+
+    // Pins toggle
+    $('#showPins').onclick = ()=>{ state.showPins = !state.showPins; draw(); };
+
+    // Tolerance
+    $('#tol').addEventListener('input', e=>{ state.tol = +e.target.value; $('#tolVal').textContent = state.tol; });
+
+    // Undo
+    $('#undoBtn').onclick = ()=>{
+      const last = state.history.pop();
+      if(!last) return;
+      if(last.type==='place'){
+        delete state.pins[last.term]; draw();
+      }
+    };
+
+    // ====== Flashcards ======
+    function setupFlash(){
+      state.quizOrder = shuffle(state.terms.slice());
+      state.quizIndex = 0; updateFlash();
+    }
+
+    function updateFlash(){
+      $('#fcTerm').textContent = currentTarget() || '—';
+      const pct = state.terms.length? ((state.quizIndex)/state.terms.length)*100 : 0;
+      $('#fcBar').style.width = pct+'%';
+      $('#fcProgress').textContent = `${Math.min(state.quizIndex+1,state.terms.length)} / ${state.terms.length}`;
+    }
+
+    function flipFlash(){
+      // In this simple version, flip toggles a hint reveal ping to the correct pin if exists
+      const term = currentTarget(); if(!term) return;
+      const p = state.pins[term]; if(p){ revealPing(p.x*canvas.width, p.y*canvas.height); }
+    }
+
+    $('#fcNext').onclick = ()=>{ if(state.quizIndex<state.quizOrder.length-1){ state.quizIndex++; updateFlash(); } };
+    $('#fcKnow').onclick = ()=>{ if(state.quizIndex<state.quizOrder.length-1){ state.quizIndex++; updateFlash(); } };
+    $('#fcUnsure').onclick = ()=>{ if(state.quizIndex<state.quizOrder.length-1){ state.quizIndex++; updateFlash(); } };
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', e=>{
+      if(e.code==='Space'){ e.preventDefault(); if(state.mode==='flash'){ flipFlash(); }}
+      if(e.key==='n'){ nextTarget(); }
+    });
+
+    // ====== Effects ======
+    function revealPing(x,y){
+      const r=14; ctx.save(); draw();
+      ctx.strokeStyle = 'rgba(122,162,255,.9)'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke(); ctx.restore();
+      // temporary DOM marker for animation
+      const m = document.createElement('div'); m.className='pin'; m.style.left=x+'px'; m.style.top=y+'px'; m.style.position='absolute';
+      $('#stage').appendChild(m); setTimeout(()=>m.remove(), 900);
+    }
+
+    function confetti(x,y){
+      const N=24, particles=[]; const container = document.createElement('div'); container.style.position='absolute'; container.style.left=0; container.style.top=0; container.style.pointerEvents='none'; container.style.width='100%'; container.style.height='100%';
+      $('#stage').appendChild(container);
+      for(let i=0;i<N;i++){
+        const p = document.createElement('div');
+        p.style.position='absolute';
+        p.style.left=x+'px'; p.style.top=y+'px';
+        p.style.width='6px'; p.style.height='10px';
+        p.style.borderRadius='2px';
+        p.style.background=`hsl(${Math.random()*360},80%,60%)`;
+        p.style.transform=`translate(-50%,-50%) rotate(${Math.random()*360}deg)`;
+        p.style.transition='transform .8s ease, opacity .9s ease';
+        container.appendChild(p); particles.push(p);
+        const ang = Math.random()*Math.PI*2; const dist = 80+Math.random()*70;
+        requestAnimationFrame(()=>{
+          p.style.transform = `translate(${Math.cos(ang)*dist}px, ${Math.sin(ang)*dist}px) rotate(${Math.random()*360}deg)`;
+          p.style.opacity = 0;
+        });
+      }
+      setTimeout(()=>container.remove(), 900);
+    }
+
+    // ====== Export / Import / Reset ======
+    $('#exportBtn').onclick = ()=>{
+      const data = {
+        terms: state.terms,
+        pins: state.pins,
+        tol: state.tol,
+        // image omitted to keep file small; re-upload on load
+      };
+      const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='map-quiz-deck.json'; a.click(); URL.revokeObjectURL(url);
+      toast('Exported deck JSON');
+    };
+
+    $('#importInput').addEventListener('change', e=>{
+      const file = e.target.files[0]; if(!file) return;
+      const fr = new FileReader(); fr.onload = ()=>{
+        try{ const data = JSON.parse(fr.result);
+          state.terms = data.terms||[]; state.pins = data.pins||{}; state.tol = data.tol||24;
+          $('#tol').value = state.tol; $('#tolVal').textContent=state.tol;
+          renderTerms(); draw(); toast('Imported deck');
+        } catch(err){ toast('Invalid JSON'); }
+      }; fr.readAsText(file);
+    });
+
+    $('#resetBtn').onclick = ()=>{
+      if(confirm('Clear all terms, pins, and image?')){
+        state.terms=[]; state.pins={}; state.image=null; imgEl.src=''; state.score=0; state.streak=0; renderTerms(); draw(); persist();
+      }
+    };
+
+    // ====== Persistence ======
+    function persist(){
+      localStorage.setItem('mqz_terms', JSON.stringify(state.terms));
+      localStorage.setItem('mqz_pins', JSON.stringify(state.pins));
+      localStorage.setItem('mqz_tol', String(state.tol));
+    }
+    function loadPersist(){
+      try{
+        const t = JSON.parse(localStorage.getItem('mqz_terms')||'[]');
+        const p = JSON.parse(localStorage.getItem('mqz_pins')||'{}');
+        const tol = +localStorage.getItem('mqz_tol')||24;
+        state.terms=t; state.pins=p; state.tol=tol; $('#tol').value=tol; $('#tolVal').textContent=tol;
+      }catch{ /* ignore */ }
+    }
+
+    // ====== Init ======
+    function init(){
+      loadPersist(); renderTerms(); resizeCanvas(); setMode('author'); setupFlash();
+      updateScore(); updateTargetLabel();
+    }
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>
