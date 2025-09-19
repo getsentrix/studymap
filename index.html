@@ -132,7 +132,7 @@
 <body>
   <div class="app">
     <header class="panel">
-      <h1><span class="dot"></span> Map Quiz Studio <span class="small" style="opacity:.65">– OCR.space AI Enhanced</span></h1>
+      <h1><span class="dot"></span> Map Quiz Studio <span class="small" style="opacity:.65">by Dylan Pritsker</span></h1>
       <div style="display:flex; gap:8px; align-items:center">
         <button class="btn ai" id="aiMapperBtn" title="OCR.space free text detection">AI Text Scanner</button>
         <button class="btn ghost" id="exportBtn" title="Export deck JSON">Export</button>
@@ -263,7 +263,13 @@
 
       <div class="step">
         <div class="step-title">Step 1: Upload Map Image</div>
-        <div class="step-desc">Upload a clear map image with readable text labels for geographical features.</div>
+     <div class="step-desc">
+  Upload a clear map image with readable text labels for geographical features.
+  To remove any excess labels, use
+  <a href="https://cleanup.pictures/" target="_blank" style="color:var(--accent);text-decoration:underline;">
+    cleanup.pictures
+  </a>.
+</div>
         <input id="aiImgInput" type="file" accept="image/*" style="display:none;" />
         <div style="display:flex; gap:8px; margin-bottom:12px;">
           <label for="aiImgInput" class="btn">Choose Map Image</label>
