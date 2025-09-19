@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Map Quiz Studio – Image-Based Practice</title>
+  <title>Map Quiz Studio</title>
   <style>
     :root {
       --bg: #0b1020;
@@ -17,7 +17,7 @@
       --shadow: 0 10px 30px rgba(0,0,0,.35);
       --radius: 18px;
     }
-    html, body { box-sizing: border-box; margin: 0; padding: 0; height: 100%; }
+    html,body { box-sizing: border-box; margin: 0; padding: 0; height: 100%; }
     body {
       background: radial-gradient(1200px 800px at 20% -10%, #1a224a 0, rgba(26,34,74,0) 60%, var(--bg));
       color: var(--text);
@@ -174,9 +174,8 @@
     }
     // === EVENT HANDLERS & LOGIC ===
     function setMode(m) { state.mode = m; el('modeStatus').textContent = m; saveState(); drawCanvas(); updateUI(); }
-    ['modeAuthor','modeQuiz','modeFlash'].forEach((id,i) => el(id).onclick = () => setMode(['Author','Quiz','Flashcards'][i]));
+    ['modeAuthor','modeQuiz','modeFlash','fit'].forEach((id,i) => el(id).onclick = () => setMode(['Author','Quiz','Flashcards','Author'][i]));
     el('tolerance').oninput = e => state.tolerance = parseInt(el('tolVal').textContent = e.target.value,10), saveState();
-    el('fit').onclick = () => { fitCanvas(); saveState(); };
     el('removeImg').onclick = () => { state.img = null; img.src = ""; saveState(); drawCanvas(); };
     el('imgInput').onchange = e => {
       let f = e.target.files[0]; if (!f) return;
