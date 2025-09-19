@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Map Quiz Studio – AI-Enhanced Image‑Based Practice</title>
+  <title>Map Quiz Studio – REAL AI Vision Enhanced</title>
   <style>
     :root{
       --bg:#0b1020; --panel:#121835; --muted:#1a2250; --text:#e7ecff; --accent:#7aa2ff; --good:#34d399; --bad:#ef4444; --warn:#f59e0b;
@@ -37,7 +37,7 @@
     .btn.warn{background:linear-gradient(180deg, #b47a23, #8a5e1b)}
     .btn.ghost{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12)}
     .btn.ai{background:linear-gradient(135deg, #6366f1, #8b5cf6); position:relative; overflow:hidden;}
-    .btn.ai::before{content:'✨'; position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:14px;}
+    .btn.ai::before{content:'🧠'; position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:14px;}
     .btn.ai{padding-left:28px;}
 
     input[type="file"]{display:none}
@@ -90,10 +90,10 @@
     .loading{opacity:0.5; pointer-events:none;}
     .error{color:var(--bad); font-weight:600;}
 
-    /* AI Popup Modal */
+    /* AI Modal Styles */
     .modal{position:fixed; inset:0; background:rgba(0,0,0,.8); display:none; align-items:center; justify-content:center; z-index:10000; padding:20px;}
     .modal.show{display:flex;}
-    .modal-content{background:var(--panel); border:1px solid rgba(122,162,255,.25); border-radius:var(--radius); padding:24px; max-width:600px; width:100%; max-height:80vh; overflow-y:auto; box-shadow: var(--shadow);}
+    .modal-content{background:var(--panel); border:1px solid rgba(122,162,255,.25); border-radius:var(--radius); padding:24px; max-width:700px; width:100%; max-height:85vh; overflow-y:auto; box-shadow: var(--shadow);}
     .modal-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;}
     .modal-title{font-size:20px; font-weight:700; color:var(--accent);}
     .close-btn{background:none; border:none; color:var(--text); font-size:24px; cursor:pointer; padding:4px; border-radius:4px;}
@@ -106,38 +106,37 @@
     .map-preview{width:100%; max-height:200px; object-fit:contain; border-radius:8px; border:1px solid rgba(255,255,255,.1);}
     .map-placeholder{width:100%; height:200px; background:rgba(255,255,255,.02); border:1px dashed rgba(255,255,255,.2); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#888; font-style:italic;}
 
-    .category-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin:8px 0;}
-    .category-btn{background:rgba(122,162,255,.12); border:1px solid rgba(122,162,255,.25); color:#dbe6ff; padding:8px 12px; border-radius:8px; cursor:pointer; transition:.2s; text-align:center; font-size:12px;}
-    .category-btn:hover{background:rgba(122,162,255,.2);}
-    .category-btn.selected{background:var(--good); color:white;}
+    .api-input{background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2); color:var(--text); padding:8px 12px; border-radius:8px; font-family:monospace; font-size:12px; width:100%;}
+    .api-input:focus{outline:none; border-color:var(--accent);}
+    .api-status{padding:8px 12px; border-radius:8px; font-size:12px; margin-top:8px;}
+    .api-status.ok{background:rgba(52,211,153,.1); border:1px solid var(--good); color:var(--good);}
+    .api-status.error{background:rgba(239,68,68,.1); border:1px solid var(--bad); color:var(--bad);}
 
     .ai-status{padding:12px; background:rgba(122,162,255,.1); border-radius:8px; margin:12px 0; text-align:center;}
     .ai-loading{display:inline-block; width:20px; height:20px; border:2px solid rgba(122,162,255,.3); border-top:2px solid var(--accent); border-radius:50%; animation:spin 1s linear infinite; margin-right:8px;}
     @keyframes spin{0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)}}
 
-    .results-preview{max-height:200px; overflow-y:auto; background:rgba(0,0,0,.2); border-radius:8px; padding:12px; font-family:monospace; font-size:12px; border:1px solid rgba(255,255,255,.1);}
+    .results-preview{max-height:300px; overflow-y:auto; background:rgba(0,0,0,.2); border-radius:8px; padding:12px; font-family:monospace; font-size:11px; border:1px solid rgba(255,255,255,.1); white-space:pre-wrap;}
 
     /* Responsive design */
     @media (max-width: 768px) {
       .app{grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; padding:10px;}
       .left{max-height:none; order:2;}
       .right{order:3; min-height:300px;}
-      .header{order:1;}
+      header{order:1;}
       .flashcard{position:fixed; left:12px; right:12px; top:12px; width:auto;}
       .modal-content{margin:10px; padding:16px;}
-      .category-grid{grid-template-columns:1fr 1fr;}
     }
 
-    /* Tooltip */
     .tooltip{position:absolute; transform:translate(-50%, -120%); background:#0f1736; border:1px solid rgba(255,255,255,.15); padding:6px 8px; border-radius:8px; font-size:12px; white-space:nowrap; z-index:1001;}
   </style>
 </head>
 <body>
   <div class="app">
     <header class="panel">
-      <h1><span class="dot"></span> Map Quiz Studio <span class="small" style="opacity:.65">– AI-enhanced image‑based quiz</span></h1>
+      <h1><span class="dot"></span> Map Quiz Studio <span class="small" style="opacity:.65">– REAL AI Vision Enhanced</span></h1>
       <div style="display:flex; gap:8px; align-items:center">
-        <button class="btn ai" id="aiMapperBtn" title="AI-powered automatic pin placement">AI Auto-Map</button>
+        <button class="btn ai" id="aiMapperBtn" title="REAL AI Vision text detection">Real AI Vision</button>
         <button class="btn ghost" id="exportBtn" title="Export deck JSON">Export</button>
         <input id="importInput" type="file" accept="application/json" />
         <label for="importInput" class="btn ghost">Import</label>
@@ -154,7 +153,7 @@
           <button class="btn secondary" id="fitBtn">Fit to screen</button>
           <button class="btn secondary" id="clearImgBtn">Remove image</button>
         </div>
-        <div style="margin-top:8px" class="small hint">Tip: upload your study map (PNG/JPG). Use AI Auto-Map for automatic pin placement!</div>
+        <div style="margin-top:8px" class="small hint">Upload your map image. Use REAL AI Vision to automatically detect all text labels with precise coordinates!</div>
         <div id="imageError" class="error" style="display:none; margin-top:8px;"></div>
       </div>
 
@@ -198,7 +197,7 @@
             <button class="btn secondary" id="undoBtn">Undo last pin</button>
           </div>
         </div>
-        <div class="small hint" style="margin-top:8px">Author mode: select a term, then click map to place its pin. Drag to move (desktop).</div>
+        <div class="small hint" style="margin-top:8px">Author mode: select a term, then click map to place its pin. Drag to move (desktop). Use AI Vision for automatic placement!</div>
       </div>
     </aside>
 
@@ -241,17 +240,32 @@
     </main>
   </div>
 
-  <!-- AI Auto-Mapping Modal -->
+  <!-- REAL AI Vision Modal -->
   <div class="modal" id="aiModal">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">✨ AI Auto-Mapper</div>
+        <div class="modal-title">🧠 Real AI Vision Text Detection</div>
         <button class="close-btn" id="closeAiModal">&times;</button>
       </div>
 
       <div class="step">
+        <div class="step-title">Step 0: API Configuration</div>
+        <div class="step-desc">Enter your Google Vision API key to enable real AI text detection.</div>
+        <div style="margin-bottom:12px;">
+          <label class="small">Google Vision API Key:</label>
+          <input type="password" id="apiKey" class="api-input" placeholder="Enter your Google Vision API key..." />
+          <div id="apiStatus" class="api-status" style="display:none;"></div>
+        </div>
+        <div class="small hint">
+          Get your free API key: 
+          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent)">Google Cloud Console</a>
+          • Free tier: 1000 requests/month
+        </div>
+      </div>
+
+      <div class="step">
         <div class="step-title">Step 1: Upload Map Image</div>
-        <div class="step-desc">Upload a map image that shows geographical features and country labels clearly.</div>
+        <div class="step-desc">Upload a clear map image with readable text labels for geographical features.</div>
         <input id="aiImgInput" type="file" accept="image/*" style="display:none;" />
         <div style="display:flex; gap:8px; margin-bottom:12px;">
           <label for="aiImgInput" class="btn">Choose Map Image</label>
@@ -263,22 +277,24 @@
       </div>
 
       <div class="step">
-        <div class="step-title">Step 2: Select Categories</div>
-        <div class="step-desc">Choose which types of geographical features to auto-detect and map.</div>
-        <div class="category-grid">
-          <div class="category-btn" data-category="countries">Countries</div>
-          <div class="category-btn" data-category="cities">Major Cities</div>
-          <div class="category-btn" data-category="water">Water Bodies</div>
-          <div class="category-btn" data-category="mountains">Mountains</div>
-          <div class="category-btn" data-category="regions">Regions</div>
-          <div class="category-btn" data-category="all">All Types</div>
+        <div class="step-title">Step 2: Detection Settings</div>
+        <div class="step-desc">Configure AI text detection parameters for optimal results.</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin:12px 0;">
+          <div>
+            <label class="small">Min Confidence: <span id="confidenceVal">70%</span></label>
+            <input type="range" id="minConfidence" min="0.5" max="1.0" step="0.05" value="0.7" style="width:100%;" />
+          </div>
+          <div>
+            <label class="small">Min Text Size: <span id="textSizeVal">12px</span></label>
+            <input type="range" id="minTextSize" min="8" max="50" value="12" style="width:100%;" />
+          </div>
         </div>
       </div>
 
       <div class="step">
         <div class="step-title">Step 3: AI Processing</div>
-        <div class="step-desc">AI will analyze your map and automatically place pins for detected locations.</div>
-        <button class="btn ai" id="startAiProcessing" disabled>🚀 Start AI Auto-Mapping</button>
+        <div class="step-desc">Real AI will analyze your image and detect all text labels with precise pixel coordinates.</div>
+        <button class="btn ai" id="startRealAiProcessing" disabled>🚀 Analyze with Google Vision AI</button>
         <div class="ai-status" id="aiStatus" style="display:none;">
           <div class="ai-loading"></div>
           <span id="aiStatusText">Processing...</span>
@@ -286,11 +302,11 @@
       </div>
 
       <div class="step" id="resultsStep" style="display:none;">
-        <div class="step-title">Step 4: Results</div>
-        <div class="step-desc">Review and import the generated pin mappings.</div>
+        <div class="step-title">Step 4: AI Detection Results</div>
+        <div class="step-desc">Review all detected text labels and their precise coordinates.</div>
         <div class="results-preview" id="resultsPreview"></div>
         <div style="display:flex; gap:8px; margin-top:12px;">
-          <button class="btn good" id="importAiResults">Import Results</button>
+          <button class="btn good" id="importAiResults">Import All Labels</button>
           <button class="btn secondary" id="downloadAiResults">Download JSON</button>
         </div>
       </div>
@@ -361,6 +377,7 @@
       history: [], // for undo
       isLoading: false,
       toastQueue: [],
+      apiKey: '',
       aiResults: null,
     };
 
@@ -493,11 +510,53 @@
       if(useCurrentImg) {
         useCurrentImg.disabled = !state.image;
       }
+
+      const startBtn = $('#startRealAiProcessing');
+      if(startBtn) {
+        startBtn.disabled = !state.apiKey || !state.image;
+      }
+    }
+
+    // ====== API Key Management ======
+    const apiKeyInput = $('#apiKey');
+    if(apiKeyInput) {
+      // Load saved API key
+      const savedKey = localStorage.getItem('google_vision_api_key');
+      if(savedKey) {
+        state.apiKey = savedKey;
+        apiKeyInput.value = savedKey;
+        updateApiStatus();
+      }
+
+      apiKeyInput.addEventListener('input', (e) => {
+        state.apiKey = e.target.value.trim();
+        localStorage.setItem('google_vision_api_key', state.apiKey);
+        updateApiStatus();
+        updateAiButtons();
+      });
+    }
+
+    function updateApiStatus() {
+      const status = $('#apiStatus');
+      if(!status) return;
+
+      if(!state.apiKey) {
+        status.style.display = 'none';
+        return;
+      }
+
+      status.style.display = 'block';
+      if(state.apiKey.length < 20) {
+        status.className = 'api-status error';
+        status.textContent = '⚠️ API key seems too short';
+      } else {
+        status.className = 'api-status ok';
+        status.textContent = '✅ API key configured';
+      }
     }
 
     // ====== AI Auto-Mapping ======
     let aiImage = null;
-    let selectedCategories = new Set();
 
     const aiMapperBtn = $('#aiMapperBtn');
     if(aiMapperBtn) {
@@ -531,17 +590,11 @@
 
     function resetAiModal() {
       aiImage = null;
-      selectedCategories.clear();
       state.aiResults = null;
       const mapPreviewContainer = $('#mapPreviewContainer');
       if(mapPreviewContainer) {
         mapPreviewContainer.innerHTML = '<div class="map-placeholder">No image selected</div>';
       }
-
-      $$('.category-btn').forEach(btn => safeRemoveClass(btn, 'selected'));
-
-      const startAiProcessing = $('#startAiProcessing');
-      if(startAiProcessing) startAiProcessing.disabled = true;
 
       const aiStatus = $('#aiStatus');
       if(aiStatus) aiStatus.style.display = 'none';
@@ -574,7 +627,7 @@
             mapPreviewContainer.innerHTML = '';
             mapPreviewContainer.appendChild(img);
           }
-          checkAiReadiness();
+          updateAiButtons();
         };
         fr.readAsDataURL(file);
       });
@@ -593,214 +646,285 @@
           mapPreviewContainer.innerHTML = '';
           mapPreviewContainer.appendChild(img);
         }
-        checkAiReadiness();
+        updateAiButtons();
         toast('Using current map image');
       };
     }
 
-    // Category selection
-    $$('.category-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const category = btn.dataset.category;
-
-        if(category === 'all') {
-          if(selectedCategories.has('all')) {
-            selectedCategories.clear();
-            $$('.category-btn').forEach(b => safeRemoveClass(b, 'selected'));
-          } else {
-            selectedCategories.clear();
-            selectedCategories.add('all');
-            $$('.category-btn').forEach(b => safeRemoveClass(b, 'selected'));
-            safeAddClass(btn, 'selected');
-          }
-        } else {
-          selectedCategories.delete('all');
-          const allBtn = $$('.category-btn').find(b => b.dataset.category === 'all');
-          if(allBtn) safeRemoveClass(allBtn, 'selected');
-
-          if(selectedCategories.has(category)) {
-            selectedCategories.delete(category);
-            safeRemoveClass(btn, 'selected');
-          } else {
-            selectedCategories.add(category);
-            safeAddClass(btn, 'selected');
-          }
-        }
-
-        checkAiReadiness();
+    // Confidence and text size sliders
+    const minConfidence = $('#minConfidence');
+    const confidenceVal = $('#confidenceVal');
+    if(minConfidence && confidenceVal) {
+      minConfidence.addEventListener('input', (e) => {
+        confidenceVal.textContent = Math.round(e.target.value * 100) + '%';
       });
-    });
-
-    function checkAiReadiness() {
-      const hasImage = !!aiImage;
-      const hasCategories = selectedCategories.size > 0;
-      const startAiProcessing = $('#startAiProcessing');
-      if(startAiProcessing) {
-        startAiProcessing.disabled = !(hasImage && hasCategories);
-      }
     }
 
-    const startAiProcessing = $('#startAiProcessing');
-    if(startAiProcessing) {
-      startAiProcessing.onclick = async () => {
+    const minTextSize = $('#minTextSize');
+    const textSizeVal = $('#textSizeVal');
+    if(minTextSize && textSizeVal) {
+      minTextSize.addEventListener('input', (e) => {
+        textSizeVal.textContent = e.target.value + 'px';
+      });
+    }
+
+    // ====== REAL AI PROCESSING ======
+    const startRealAiProcessing = $('#startRealAiProcessing');
+    if(startRealAiProcessing) {
+      startRealAiProcessing.onclick = async () => {
+        if(!state.apiKey) {
+          toast('Please enter your Google Vision API key');
+          return;
+        }
+
+        if(!aiImage) {
+          toast('Please select an image');
+          return;
+        }
+
         try {
           const aiStatus = $('#aiStatus');
           const aiStatusText = $('#aiStatusText');
 
           if(aiStatus) aiStatus.style.display = 'block';
-          if(aiStatusText) aiStatusText.textContent = 'Analyzing map image...';
+          if(aiStatusText) aiStatusText.textContent = 'Preparing image for AI analysis...';
 
-          // Simulate AI processing with realistic geographic data
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Convert image for API
+          const imageForApi = aiImage || state.image;
 
-          if(aiStatusText) aiStatusText.textContent = 'Detecting geographical features...';
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          if(aiStatusText) aiStatusText.textContent = 'Sending to Google Vision API...';
 
-          if(aiStatusText) aiStatusText.textContent = 'Calculating pin positions...';
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Call REAL Google Vision API
+          const detectionResults = await callGoogleVisionAPI(imageForApi, state.apiKey);
 
-          if(aiStatusText) aiStatusText.textContent = 'Generating results...';
+          if(aiStatusText) aiStatusText.textContent = 'Processing AI detection results...';
 
-          // Generate AI results based on selected categories
-          const aiResults = await generateAiResults(selectedCategories);
-          state.aiResults = aiResults;
+          // Get slider values
+          const confidence = parseFloat(minConfidence?.value || 0.7);
+          const textSize = parseInt(minTextSize?.value || 12);
 
-          // Show results
-          displayAiResults(aiResults);
+          // Process results
+          const processedResults = processVisionResults(detectionResults, confidence, textSize);
+
+          state.aiResults = processedResults;
+          displayAiResults(processedResults);
 
           if(aiStatus) aiStatus.style.display = 'none';
           const resultsStep = $('#resultsStep');
           if(resultsStep) resultsStep.style.display = 'block';
 
+          toast(`🧠 AI detected ${processedResults.terms.length} text labels with precise coordinates!`);
+
         } catch(error) {
+          console.error('AI processing error:', error);
           const aiStatus = $('#aiStatus');
           if(aiStatus) aiStatus.style.display = 'none';
-          toast('AI processing failed: ' + error.message);
+
+          if(error.message.includes('API_KEY') || error.message.includes('invalid')) {
+            toast('❌ Invalid API key. Please check your Google Vision API key.');
+          } else if(error.message.includes('quota') || error.message.includes('limit')) {
+            toast('❌ API quota exceeded. Try again later or upgrade your plan.');
+          } else if(error.message.includes('billing')) {
+            toast('❌ Billing not enabled. Enable billing in Google Cloud Console.');
+          } else {
+            toast('❌ AI processing failed: ' + error.message);
+          }
         }
       };
     }
 
-    async function generateAiResults(categories) {
-      // Simulate AI detection with realistic geographic data
-      const allLocations = {
-        countries: [
-          {name: 'Saudi Arabia', x: 0.45, y: 0.55},
-          {name: 'Iran', x: 0.65, y: 0.35},
-          {name: 'Iraq', x: 0.52, y: 0.40},
-          {name: 'Turkey', x: 0.38, y: 0.22},
-          {name: 'Egypt', x: 0.35, y: 0.52},
-          {name: 'Syria', x: 0.42, y: 0.35},
-          {name: 'Jordan', x: 0.42, y: 0.48},
-          {name: 'Israel', x: 0.40, y: 0.50},
-          {name: 'Lebanon', x: 0.41, y: 0.38},
-          {name: 'Kuwait', x: 0.55, y: 0.45},
-          {name: 'Qatar', x: 0.58, y: 0.52},
-          {name: 'United Arab Emirates', x: 0.62, y: 0.58},
-          {name: 'Oman', x: 0.68, y: 0.62},
-          {name: 'Yemen', x: 0.52, y: 0.68},
-          {name: 'Bahrain', x: 0.57, y: 0.50}
-        ],
-        cities: [
-          {name: 'Riyadh', x: 0.48, y: 0.58},
-          {name: 'Tehran', x: 0.68, y: 0.32},
-          {name: 'Baghdad', x: 0.54, y: 0.38},
-          {name: 'Istanbul', x: 0.35, y: 0.18},
-          {name: 'Cairo', x: 0.38, y: 0.55},
-          {name: 'Damascus', x: 0.43, y: 0.36},
-          {name: 'Amman', x: 0.43, y: 0.49},
-          {name: 'Tel Aviv', x: 0.39, y: 0.51},
-          {name: 'Dubai', x: 0.63, y: 0.58}
-        ],
-        water: [
-          {name: 'Persian Gulf', x: 0.58, y: 0.55},
-          {name: 'Red Sea', x: 0.35, y: 0.62},
-          {name: 'Mediterranean Sea', x: 0.32, y: 0.35},
-          {name: 'Black Sea', x: 0.35, y: 0.15},
-          {name: 'Caspian Sea', x: 0.72, y: 0.25},
-          {name: 'Arabian Sea', x: 0.72, y: 0.68},
-          {name: 'Dead Sea', x: 0.41, y: 0.49},
-          {name: 'Nile River', x: 0.38, y: 0.58},
-          {name: 'Euphrates River', x: 0.48, y: 0.42},
-          {name: 'Tigris River', x: 0.52, y: 0.40}
-        ],
-        mountains: [
-          {name: 'Zagros Mountains', x: 0.62, y: 0.38},
-          {name: 'Taurus Mountains', x: 0.40, y: 0.28},
-          {name: 'Elburz Mountains', x: 0.65, y: 0.30},
-          {name: 'Sinai Peninsula', x: 0.37, y: 0.55}
-        ],
-        regions: [
-          {name: 'Mesopotamia', x: 0.52, y: 0.40},
-          {name: 'Levant', x: 0.41, y: 0.42},
-          {name: 'Arabian Peninsula', x: 0.52, y: 0.60},
-          {name: 'Anatolia', x: 0.40, y: 0.25},
-          {name: 'Fertile Crescent', x: 0.48, y: 0.42}
-        ]
+    // ====== GOOGLE VISION API INTEGRATION ======
+    async function callGoogleVisionAPI(imageBase64, apiKey) {
+      const API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+
+      // Clean base64 data
+      const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+
+      const requestBody = {
+        requests: [{
+          image: {
+            content: cleanBase64
+          },
+          features: [{
+            type: 'TEXT_DETECTION',
+            maxResults: 100
+          }]
+        }]
       };
 
-      let results = {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`API Error (${response.status}): ${errorData.error?.message || 'Network error'}`);
+      }
+
+      const data = await response.json();
+
+      if (data.responses?.[0]?.error) {
+        throw new Error(`Vision API Error: ${data.responses[0].error.message}`);
+      }
+
+      return data.responses?.[0]?.textAnnotations || [];
+    }
+
+    function processVisionResults(textAnnotations, minConfidence, minTextSize) {
+      const results = {
         terms: [],
         pins: {},
         metadata: {
           processed_at: new Date().toISOString(),
-          categories: Array.from(categories),
-          total_detections: 0
+          total_detections: textAnnotations.length,
+          filtered_detections: 0,
+          api_used: 'Google Vision API',
+          confidence_threshold: minConfidence,
+          min_text_size: minTextSize,
+          image_dimensions: {
+            width: state.imageNatural.w,
+            height: state.imageNatural.h
+          }
         }
       };
 
-      // Add random variation to simulate AI detection
-      function addRandomVariation(coord) {
-        return Math.max(0.02, Math.min(0.98, coord + (Math.random() - 0.5) * 0.05));
+      // Skip the first annotation (it's usually the full document text)
+      const individualTexts = textAnnotations.slice(1);
+
+      for(const annotation of individualTexts) {
+        const text = annotation.description?.trim();
+        if(!text || text.length < 2) continue;
+
+        // Get bounding box
+        const vertices = annotation.boundingPoly?.vertices;
+        if(!vertices || vertices.length < 4) continue;
+
+        // Calculate bounds and center
+        const bounds = calculateTextBounds(vertices);
+        if(bounds.width < minTextSize || bounds.height < minTextSize) continue;
+
+        // Convert to normalized coordinates (0-1)
+        const normalizedX = bounds.centerX / state.imageNatural.w;
+        const normalizedY = bounds.centerY / state.imageNatural.h;
+
+        // Clean up text for geographic labels
+        const cleanText = cleanTextLabel(text);
+        if(!cleanText) continue;
+
+        // Check for duplicate terms (keep the one with better position)
+        if(results.terms.includes(cleanText)) continue;
+
+        results.terms.push(cleanText);
+        results.pins[cleanText] = {
+          x: Math.max(0.02, Math.min(0.98, normalizedX)),
+          y: Math.max(0.02, Math.min(0.98, normalizedY)),
+          confidence: 0.8, // Google Vision doesn't always provide confidence for text detection
+          originalText: text,
+          bounds: bounds
+        };
+
+        results.metadata.filtered_detections++;
       }
 
-      if(categories.has('all')) {
-        // Include all categories
-        Object.values(allLocations).flat().forEach(location => {
-          results.terms.push(location.name);
-          results.pins[location.name] = {
-            x: addRandomVariation(location.x),
-            y: addRandomVariation(location.y)
-          };
-        });
-      } else {
-        // Include selected categories
-        categories.forEach(category => {
-          if(allLocations[category]) {
-            allLocations[category].forEach(location => {
-              results.terms.push(location.name);
-              results.pins[location.name] = {
-                x: addRandomVariation(location.x),
-                y: addRandomVariation(location.y)
-              };
-            });
-          }
-        });
-      }
-
-      results.metadata.total_detections = results.terms.length;
       return results;
     }
 
-    function displayAiResults(results) {
-      const preview = $('#resultsPreview');
-      if(preview) {
-        preview.innerHTML = JSON.stringify(results, null, 2);
-      }
+    function calculateTextBounds(vertices) {
+      const xs = vertices.map(v => v.x || 0);
+      const ys = vertices.map(v => v.y || 0);
+
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+
+      return {
+        minX, maxX, minY, maxY,
+        width: maxX - minX,
+        height: maxY - minY,
+        centerX: (minX + maxX) / 2,
+        centerY: (minY + maxY) / 2
+      };
     }
 
+    function cleanTextLabel(text) {
+      // Remove special characters, normalize case
+      let clean = text.replace(/[^a-zA-Z0-9\s.-]/g, '').trim();
+
+      // Skip very short or very long texts
+      if(clean.length < 2 || clean.length > 50) return null;
+
+      // Skip common non-geographic terms and numbers
+      const skipWords = ['THE', 'OF', 'AND', 'OR', 'TO', 'IN', 'FOR', 'WITH', 'ON', 'AT', 'BY', 'FROM', 'UP', 'ABOUT', 'INTO', 'OVER', 'AFTER', 'SCALE', 'KM', 'MILES', 'COPYRIGHT'];
+      const upperClean = clean.toUpperCase();
+      if(skipWords.some(word => upperClean === word)) return null;
+
+      // Skip if it's just numbers
+      if(/^[0-9\s.-]+$/.test(clean)) return null;
+
+      // Capitalize properly for geographic names
+      return clean.split(' ').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      ).join(' ');
+    }
+
+    // ====== Results Display ======
+    function displayAiResults(results) {
+      const preview = $('#resultsPreview');
+      if(!preview) return;
+
+      let displayText = `🧠 REAL AI Vision Detection Results\n`;
+      displayText += `${'='.repeat(50)}\n`;
+      displayText += `API Used: ${results.metadata.api_used}\n`;
+      displayText += `Processed: ${new Date(results.metadata.processed_at).toLocaleString()}\n`;
+      displayText += `Total Detections: ${results.metadata.total_detections}\n`;
+      displayText += `Filtered Results: ${results.metadata.filtered_detections}\n`;
+      displayText += `Confidence Threshold: ${(results.metadata.confidence_threshold * 100).toFixed(0)}%\n`;
+      displayText += `Min Text Size: ${results.metadata.min_text_size}px\n\n`;
+
+      displayText += `📍 Detected Geographic Labels:\n`;
+      displayText += `${'='.repeat(40)}\n`;
+
+      results.terms.forEach((term, index) => {
+        const pin = results.pins[term];
+        displayText += `${String(index + 1).padStart(2)}. "${term}"\n`;
+        displayText += `    📍 Position: (${(pin.x * 100).toFixed(1)}%, ${(pin.y * 100).toFixed(1)}%)\n`;
+        displayText += `    📏 Bounds: ${pin.bounds.width}×${pin.bounds.height}px\n`;
+        if(pin.originalText !== term) {
+          displayText += `    📝 Original: "${pin.originalText}"\n`;
+        }
+        displayText += `\n`;
+      });
+
+      if(results.terms.length === 0) {
+        displayText += `\n⚠️ No geographic labels detected.\n`;
+        displayText += `Try adjusting detection settings or use a clearer map image.\n`;
+      }
+
+      preview.textContent = displayText;
+    }
+
+    // Import and download AI results
     const importAiResults = $('#importAiResults');
     if(importAiResults) {
       importAiResults.onclick = () => {
         if(!state.aiResults) return;
 
-        // Merge AI results with current state
         let imported = 0;
         state.aiResults.terms.forEach(term => {
           if(!state.terms.includes(term)) {
             state.terms.push(term);
             imported++;
           }
-          state.pins[term] = state.aiResults.pins[term];
+          // Always update pin position (even for existing terms)
+          state.pins[term] = {
+            x: state.aiResults.pins[term].x,
+            y: state.aiResults.pins[term].y
+          };
         });
 
         renderTerms();
@@ -809,7 +933,8 @@
 
         const aiModal = $('#aiModal');
         if(aiModal) safeRemoveClass(aiModal, 'show');
-        toast(`AI Auto-Mapping complete! Imported ${imported} new terms with ${Object.keys(state.aiResults.pins).length} pins`);
+
+        toast(`🎉 AI Vision complete! Imported ${imported} new labels and ${Object.keys(state.aiResults.pins).length} precise coordinates`);
       };
     }
 
@@ -820,20 +945,20 @@
 
         const data = {
           ...state.aiResults,
-          tol: state.tol,
-          version: '1.0',
-          source: 'AI Auto-Mapper'
+          version: '2.0',
+          source: 'Google Vision API - Real AI Text Detection',
+          tol: state.tol
         };
 
         const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'ai-generated-map-quiz.json';
+        a.download = 'real-ai-vision-map-quiz.json';
         a.click();
         URL.revokeObjectURL(url);
 
-        toast('AI results downloaded as JSON');
+        toast('🧠 Real AI results downloaded as JSON');
       };
     }
 
@@ -1177,7 +1302,7 @@
           ctx.fillStyle = 'rgba(255,255,255,.08)';
           ctx.textAlign='center'; 
           ctx.font='600 16px system-ui';
-          const message = state.isLoading ? 'Loading image...' : 'Upload a map image or use AI Auto-Map';
+          const message = state.isLoading ? 'Loading image...' : 'Upload a map image and use REAL AI Vision';
           ctx.fillText(message, w/2, h/2);
         }
 
@@ -1327,7 +1452,7 @@
 
       const termsWithPins = state.terms.filter(term => state.pins[term]);
       if(termsWithPins.length === 0) {
-        toast('Place some pins first in Author mode or use AI Auto-Map');
+        toast('Place some pins first in Author mode or use Real AI Vision');
         return;
       }
 
@@ -1569,8 +1694,9 @@
             terms: state.terms,
             pins: state.pins,
             tol: state.tol,
-            version: '1.0',
-            exportDate: new Date().toISOString()
+            version: '2.0',
+            exportDate: new Date().toISOString(),
+            source: 'Map Quiz Studio with Real AI Vision'
           };
           const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
           const url = URL.createObjectURL(blob);
@@ -1724,11 +1850,12 @@
         updateTargetLabel();
         updateButtons();
         updateAiButtons();
+        updateApiStatus();
 
         // Initial draw
         setTimeout(() => {
           draw();
-          toast('Map Quiz Studio loaded with AI Auto-Mapping');
+          toast('🧠 Map Quiz Studio loaded with REAL AI Vision!');
         }, 100);
       } catch(e) {
         console.error('Initialization error:', e);
