@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="viewport" content="width=1024, initial-scale=1.0">
   <title>Map Quiz Studio</title>
   <style>
     :root {
@@ -17,29 +17,53 @@
       --shadow: 0 10px 30px rgba(0,0,0,.35);
       --radius: 18px;
     }
-    html,body { box-sizing: border-box; margin: 0; padding: 0; height: 100%; }
+    html,body { height:100%; }
     body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
       background: radial-gradient(1200px 800px at 20% -10%, #1a224a 0, rgba(26,34,74,0) 60%, var(--bg));
       color: var(--text);
       font: 500 15px/1.5 'system-ui', Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      height: 100vh;
+      box-sizing: border-box;
     }
     .app {
       display: grid;
       grid-template-columns: 340px 1fr;
-      gap: 18px;
-      height: 100vh;
-      padding: 18px;
+      grid-template-rows: 1fr;
+      gap: 16px;
+      height: 98vh;
+      max-width: 99vw;
+      align-items: stretch;
+      box-sizing: border-box;
+      padding: 12px;
     }
     .panel {
       background: var(--panel);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 18px;
+      padding: 16px 16px 8px 16px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
-      min-width: 310px;
+      gap: 14px;
+      min-width: 280px;
+      max-width: 350px;
+      min-height: 0;
+      max-height: 98vh;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    .canvas-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      min-height: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
     }
     .btn, button, input[type="file"] {
       background: var(--muted);
@@ -47,7 +71,7 @@
       border: none;
       border-radius: 9px;
       font: inherit;
-      padding: 8px 15px;
+      padding: 7px 13px;
       margin: 2px 0 2px 0;
       cursor: pointer;
       transition: background .15s;
@@ -60,11 +84,28 @@
     .row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
     h1 { font-size: 20px; margin: 0 0 8px 0; }
     input[type="range"] { vertical-align: middle; }
+    #termsList { max-height: 120px; overflow-y: auto; }
+    #mapCanvas {
+      max-width: 100%;
+      max-height: 91vh;
+      width: 96%;
+      height: 91vh;
+      border-radius: 22px;
+      outline: 2px solid #282c40;
+      background: #101428;
+      box-shadow: 0 2px 48px #05082066;
+      display: block;
+    }
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      .canvas-panel { min-width: 0; }
+      .panel { max-width: 99vw; }
+    }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="panel" style="min-width:320px;">
+    <div class="panel">
       <h1>Map Quiz Studio</h1>
       <div class="row">
         <button id="export">Export</button><button id="import">Import</button>
@@ -101,7 +142,7 @@
         <button id="loadFeatures">Load Middle East – Features</button>
         <button id="clearTerms">Clear terms</button>
       </div>
-      <div id="termsList" style="max-height:120px;overflow-y:auto;margin:6px 0;"></div>
+      <div id="termsList"></div>
       <hr />
       <b>QUIZ CONTROLS</b>
       <div class="row">
@@ -120,8 +161,8 @@
       <div class="row"><span>Target: <b id="targetTerm">—</b></span></div>
       <div class="row"><button id="next" style="flex:1;">Next <span class="shortcut">N, Space</span></button></div>
     </div>
-    <div class="panel" style="flex:1;display:flex;justify-content:center;align-items:center;overflow:hidden;">
-      <canvas id="mapCanvas" tabindex="0" style="max-width:100%;max-height:650px;width:90vw;height:85vh;outline:2px solid #282c40;background:#101428;border-radius:22px;box-shadow:0 2px 48px #05082066;"></canvas>
+    <div class="panel canvas-panel">
+      <canvas id="mapCanvas" tabindex="0"></canvas>
     </div>
   </div>
   <script>
@@ -129,21 +170,21 @@
     let state = { img: null, pins: [], terms: [], mode: 'Author', tolerance: 24, quizOrder: [], quizIdx: 0, score: 0, streak: 0, pinsEnabled: true };
     const saveState = () => localStorage.setItem('studiemap', JSON.stringify(state));
     const loadState = () => {
-      try {
-        const x = JSON.parse(localStorage.getItem('studiemap'));
-        if (x) Object.assign(state, x);
-      } catch {}
+      try { const x = JSON.parse(localStorage.getItem('studiemap')); if (x) Object.assign(state, x); } catch {}
     };
-    const clearState = () => {
-      localStorage.removeItem('studiemap');
-      location.reload();
-    };
-    // === UI ELEMENTS ===
+    const clearState = () => { localStorage.removeItem('studiemap'); location.reload(); };
     const el = id => document.getElementById(id);
     // === CANVAS LOGIC ===
     let canvas = el('mapCanvas'), ctx = canvas.getContext('2d'), img = new window.Image();
+    function fitCanvas() {
+      let maxW = Math.min(window.innerWidth - 410, 1300), maxH = Math.min(window.innerHeight - 44, 880);
+      let w = Math.max(520, maxW), h = Math.max(490, maxH);
+      canvas.width = w;
+      canvas.height = h;
+      drawCanvas();
+    }
+    window.onresize = fitCanvas;
     function drawCanvas() {
-      // fit image, draw pins
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (state.img) {
         img.src = state.img;
@@ -155,26 +196,21 @@
         ctx.font = '28px sans-serif';
         ctx.fillText('No image', canvas.width/2-54, canvas.height/2);
       }
-      // pins
-      if (state.pinsEnabled && state.pins && state.pins.length)
+      if (state.pinsEnabled && state.pins.length)
         for (let p of state.pins) drawPin(p.x, p.y, p.termIdx, false);
-      // author mode highlight
-      if (state.mode == 'Author' && state.selectedTermIdx != null && state.ghostPin)
-        drawPin(state.ghostPin.x, state.ghostPin.y, state.selectedTermIdx, true);
     }
     function drawPin(x, y, idx, ghost) {
       ctx.save();
-      ctx.globalAlpha = ghost ? 0.6 : 1;
+      ctx.globalAlpha = ghost ? 0.7 : 1;
       ctx.beginPath();
       ctx.arc(x, y, 13, 0, 2*Math.PI); ctx.fillStyle = ghost ? '#e7ecff77' : '#7aa2ff'; ctx.fill();
       ctx.lineWidth = 3; ctx.strokeStyle = '#101428'; ctx.stroke();
       ctx.font = '14px bold sans-serif'; ctx.fillStyle = '#18182b'; ctx.textAlign = 'center';
-      ctx.fillText(state.terms[idx].substr(0,2).toUpperCase(), x, y + 4);
+      ctx.fillText(state.terms[idx]?.substr(0,2).toUpperCase()||'', x, y + 4);
       ctx.restore();
     }
-    // === EVENT HANDLERS & LOGIC ===
     function setMode(m) { state.mode = m; el('modeStatus').textContent = m; saveState(); drawCanvas(); updateUI(); }
-    ['modeAuthor','modeQuiz','modeFlash','fit'].forEach((id,i) => el(id).onclick = () => setMode(['Author','Quiz','Flashcards','Author'][i]));
+    ['modeAuthor','modeQuiz','modeFlash'].forEach((id,i) => el(id).onclick = () => setMode(['Author','Quiz','Flashcards'][i]));
     el('tolerance').oninput = e => state.tolerance = parseInt(el('tolVal').textContent = e.target.value,10), saveState();
     el('removeImg').onclick = () => { state.img = null; img.src = ""; saveState(); drawCanvas(); };
     el('imgInput').onchange = e => {
@@ -183,30 +219,19 @@
       reader.onload = r => { state.img = r.target.result; saveState(); drawCanvas(); };
       reader.readAsDataURL(f);
     };
-    function fitCanvas() {
-      canvas.width = Math.max(340, Math.min(window.innerWidth-360, 900));
-      canvas.height = Math.max(330, Math.min(window.innerHeight-38, 700));
-      drawCanvas();
-    }
-    window.onresize = fitCanvas;
-    // === TERMS & PIN LOGIC ===
     el('addTermBtn').onclick = () => { let v=el('addTerm').value.trim(); if(!v||state.terms.includes(v))return; state.terms.push(v); saveState(); el('addTerm').value=''; updateTerms(); };
     el('addTerm').onkeypress = e=>{ if(e.key=='Enter') el('addTermBtn').onclick(); };
     el('clearTerms').onclick = ()=>{ state.terms = []; state.pins = []; saveState(); updateTerms(); drawCanvas(); };
     function updateTerms() {
       let out = '';
       state.terms.forEach((t,i)=> {
-        out += `<div class="row">
-          <span>${t}</span>
-          <button onclick="window.delTerm(${i})">🗑️</button>
-        </div>`;
+        out += `<div class="row"><span>${t}</span><button onclick="window.delTerm(${i})">🗑️</button></div>`;
       });
       el('termsList').innerHTML = out;
       el('total').textContent = state.terms.length;
       saveState();
     }
     window.delTerm = idx => { state.terms.splice(idx,1); state.pins = state.pins.filter(p=>p.termIdx!=idx); saveState(); updateTerms(); drawCanvas(); };
-    // === PERSIST QUIZ STATS ===
     function updateUI() {
       el('score').textContent = state.score;
       el('streak').textContent = state.streak;
@@ -215,7 +240,6 @@
       el('next').disabled = (state.mode=='Author');
       saveState();
     }
-    // === QUIZ/FLASHCARD LOGIC ===
     el('start').onclick = () => {
       if (!state.terms.length) return alert('Add terms first!');
       state.quizOrder = Array.from({length:state.terms.length},(_,i)=>i).sort(()=>Math.random()-.5);
@@ -231,47 +255,32 @@
       if (state.mode == 'Quiz') {
         alert('Location: '+state.terms[state.quizOrder[state.quizIdx]]);
       }
-      // For flashcards—show answer
     };
-    el('undo').onclick = () => {
-      if(state.pins.length) state.pins.pop();
-      drawCanvas();
-      saveState();
-    };
+    el('undo').onclick = () => { if(state.pins.length) state.pins.pop(); drawCanvas(); saveState(); };
     el('togglePins').onclick = () => { state.pinsEnabled = !state.pinsEnabled; drawCanvas(); saveState(); };
-    // CANVAS INTERACTION
     canvas.onclick = e => {
       if (!state.img || state.mode=='Flashcards') return;
       let rect = canvas.getBoundingClientRect();
       let x = (e.clientX-rect.left), y = (e.clientY-rect.top);
       if (state.mode == 'Author') {
-        // author: pin to selected
         if(state.terms.length){
-          let tidx=(state.selectedTermIdx??0)%state.terms.length;
+          let tidx=state.terms.length-1;
           state.pins.push({termIdx:tidx,x,y});
           saveState(); drawCanvas();
         }
       } else if (state.mode == 'Quiz' && state.quizOrder.length) {
-        // quiz: check location
         let tidx = state.quizOrder[state.quizIdx], found=false;
         for (const p of state.pins) {
           if (p.termIdx==tidx && Math.hypot(p.x-x,p.y-y)<(state.tolerance||24)) found=true;
         }
-        if (found) {
-          state.score+=1; state.streak+=1; flash(canvas,'#34d399');
-        } else {
-          state.streak=0; flash(canvas,'#ef4444');
-        }
-        nextQuizStep();
-        updateUI();
+        if (found) { state.score+=1; state.streak+=1; flash(canvas,'#34d399'); } else { state.streak=0; flash(canvas,'#ef4444'); }
+        nextQuizStep(); updateUI();
       }
     };
-    // Visual flash effect
     function flash(node,color){
       node.style.boxShadow = `0 0 0 6px ${color}77`;
       setTimeout(()=>node.style.boxShadow='',350);
     }
-    // === HOTKEYS ===
     document.addEventListener('keydown',e=>{
       if(document.activeElement.tagName=='INPUT')return;
       switch(e.key.toLowerCase()){
@@ -285,7 +294,6 @@
         case ' ': el('next').onclick(); break;
       }
     });
-    // === DATA IMPORT/EXPORT/RESET ===
     el('export').onclick = () => {
       navigator.clipboard.writeText(JSON.stringify(state));
       alert('State copied! Paste it to restore on any device.');
@@ -296,7 +304,6 @@
       if(s && s.terms && s.img){ Object.assign(state,s); saveState(); location.reload(); }
     };
     el('reset').onclick = ()=>{ if(confirm('Reset everything?')) clearState(); };
-    // === EXAMPLES: QUICK LOAD ===
     el('loadCountries').onclick = ()=>{
       state.terms = ["India","Iran","Iraq","Sri Lanka","Pakistan","Afghanistan","Yemen","Bhutan","Russia","Bangladesh","China","Japan","Korea","Mongolia","Myanmar","Vietnam","Laos","Indonesia","Thailand"];
       updateTerms(); saveState(); };
@@ -304,13 +311,11 @@
       state.terms = ["Arabian Sea","Bay of Bengal","Indus River","Indian Ocean","Ganges River","Pacific Ocean","Yellow Sea","Huang River","Yangtze River","East Sea","South Sea","Persian Gulf","Himalayas","Gobi Desert","Hindu Kush","Tibet"];
       updateTerms(); saveState();
     };
-    // === INIT ===
     loadState();
     fitCanvas();
     updateTerms();
     updateUI();
     if(state.img){ img.src=state.img; img.onload=drawCanvas; }
-    // Drag & drop image
     canvas.ondragover = e => { e.preventDefault(); canvas.style.outlineColor = "#7aa2ff"; };
     canvas.ondragleave = e => { canvas.style.outlineColor = "#282c40"; };
     canvas.ondrop = e => {
@@ -322,16 +327,6 @@
       }
       canvas.style.outlineColor = "#282c40";
     }
-    // Keyboard shortcut tooltips if not shown
-    Array.from(document.querySelectorAll('button')).forEach(btn=>{
-      if(!btn.querySelector('.shortcut') && btn.textContent.match(/Next|Start|Undo|Reveal/))
-        btn.insertAdjacentHTML('beforeend',` <span class="shortcut">${({
-          'Start / Shuffle': 'S',
-          'Reveal': 'R',
-          'Next': 'N, Space',
-          'Undo': 'U'
-        })[btn.textContent.trim()]||''}</span>`);
-    });
   </script>
 </body>
 </html>
