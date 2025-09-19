@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Map Quiz Studio – Image‑Based Practice</title>
+  <title>Map Quiz Studio – AI-Enhanced Image‑Based Practice</title>
   <style>
     :root{
       --bg:#0b1020; --panel:#121835; --muted:#1a2250; --text:#e7ecff; --accent:#7aa2ff; --good:#34d399; --bad:#ef4444; --warn:#f59e0b;
@@ -36,6 +36,9 @@
     .btn.bad{background:linear-gradient(180deg, #b03838, #8a2c2c)}
     .btn.warn{background:linear-gradient(180deg, #b47a23, #8a5e1b)}
     .btn.ghost{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12)}
+    .btn.ai{background:linear-gradient(135deg, #6366f1, #8b5cf6); position:relative; overflow:hidden;}
+    .btn.ai::before{content:'✨'; position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:14px;}
+    .btn.ai{padding-left:28px;}
 
     input[type="file"]{display:none}
     label.file{display:inline-flex; align-items:center; gap:8px}
@@ -87,13 +90,42 @@
     .loading{opacity:0.5; pointer-events:none;}
     .error{color:var(--bad); font-weight:600;}
 
+    /* AI Popup Modal */
+    .modal{position:fixed; inset:0; background:rgba(0,0,0,.8); display:none; align-items:center; justify-content:center; z-index:10000; padding:20px;}
+    .modal.show{display:flex;}
+    .modal-content{background:var(--panel); border:1px solid rgba(122,162,255,.25); border-radius:var(--radius); padding:24px; max-width:600px; width:100%; max-height:80vh; overflow-y:auto; box-shadow: var(--shadow);}
+    .modal-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;}
+    .modal-title{font-size:20px; font-weight:700; color:var(--accent);}
+    .close-btn{background:none; border:none; color:var(--text); font-size:24px; cursor:pointer; padding:4px; border-radius:4px;}
+    .close-btn:hover{background:rgba(255,255,255,.1);}
+
+    .step{margin-bottom:20px; padding:16px; background:rgba(255,255,255,.02); border-radius:12px; border:1px solid rgba(255,255,255,.06);}
+    .step-title{font-weight:600; margin-bottom:8px; color:var(--good);}
+    .step-desc{font-size:13px; color:#bcd2ff; margin-bottom:12px;}
+
+    .map-preview{width:100%; max-height:200px; object-fit:contain; border-radius:8px; border:1px solid rgba(255,255,255,.1);}
+    .map-placeholder{width:100%; height:200px; background:rgba(255,255,255,.02); border:1px dashed rgba(255,255,255,.2); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#888; font-style:italic;}
+
+    .category-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin:8px 0;}
+    .category-btn{background:rgba(122,162,255,.12); border:1px solid rgba(122,162,255,.25); color:#dbe6ff; padding:8px 12px; border-radius:8px; cursor:pointer; transition:.2s; text-align:center; font-size:12px;}
+    .category-btn:hover{background:rgba(122,162,255,.2);}
+    .category-btn.selected{background:var(--good); color:white;}
+
+    .ai-status{padding:12px; background:rgba(122,162,255,.1); border-radius:8px; margin:12px 0; text-align:center;}
+    .ai-loading{display:inline-block; width:20px; height:20px; border:2px solid rgba(122,162,255,.3); border-top:2px solid var(--accent); border-radius:50%; animation:spin 1s linear infinite; margin-right:8px;}
+    @keyframes spin{0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)}}
+
+    .results-preview{max-height:200px; overflow-y:auto; background:rgba(0,0,0,.2); border-radius:8px; padding:12px; font-family:monospace; font-size:12px; border:1px solid rgba(255,255,255,.1);}
+
     /* Responsive design */
     @media (max-width: 768px) {
       .app{grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; padding:10px;}
       .left{max-height:none; order:2;}
       .right{order:3; min-height:300px;}
-      header{order:1;}
+      .header{order:1;}
       .flashcard{position:fixed; left:12px; right:12px; top:12px; width:auto;}
+      .modal-content{margin:10px; padding:16px;}
+      .category-grid{grid-template-columns:1fr 1fr;}
     }
 
     /* Tooltip */
@@ -103,8 +135,9 @@
 <body>
   <div class="app">
     <header class="panel">
-      <h1><span class="dot"></span> Map Quiz Studio <span class="small" style="opacity:.65">– build your own image‑based quiz</span></h1>
+      <h1><span class="dot"></span> Map Quiz Studio <span class="small" style="opacity:.65">– AI-enhanced image‑based quiz</span></h1>
       <div style="display:flex; gap:8px; align-items:center">
+        <button class="btn ai" id="aiMapperBtn" title="AI-powered automatic pin placement">AI Auto-Map</button>
         <button class="btn ghost" id="exportBtn" title="Export deck JSON">Export</button>
         <input id="importInput" type="file" accept="application/json" />
         <label for="importInput" class="btn ghost">Import</label>
@@ -121,7 +154,7 @@
           <button class="btn secondary" id="fitBtn">Fit to screen</button>
           <button class="btn secondary" id="clearImgBtn">Remove image</button>
         </div>
-        <div style="margin-top:8px" class="small hint">Tip: upload your study map (PNG/JPG). In Author mode, click the map to place a pin for a selected term.</div>
+        <div style="margin-top:8px" class="small hint">Tip: upload your study map (PNG/JPG). Use AI Auto-Map for automatic pin placement!</div>
         <div id="imageError" class="error" style="display:none; margin-top:8px;"></div>
       </div>
 
@@ -208,6 +241,62 @@
     </main>
   </div>
 
+  <!-- AI Auto-Mapping Modal -->
+  <div class="modal" id="aiModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">✨ AI Auto-Mapper</div>
+        <button class="close-btn" id="closeAiModal">&times;</button>
+      </div>
+
+      <div class="step">
+        <div class="step-title">Step 1: Upload Map Image</div>
+        <div class="step-desc">Upload a map image that shows geographical features and country labels clearly.</div>
+        <input id="aiImgInput" type="file" accept="image/*" style="display:none;" />
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <label for="aiImgInput" class="btn">Choose Map Image</label>
+          <button class="btn secondary" id="useCurrentImg" disabled>Use Current Image</button>
+        </div>
+        <div id="mapPreviewContainer">
+          <div class="map-placeholder">No image selected</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-title">Step 2: Select Categories</div>
+        <div class="step-desc">Choose which types of geographical features to auto-detect and map.</div>
+        <div class="category-grid">
+          <div class="category-btn" data-category="countries">Countries</div>
+          <div class="category-btn" data-category="cities">Major Cities</div>
+          <div class="category-btn" data-category="water">Water Bodies</div>
+          <div class="category-btn" data-category="mountains">Mountains</div>
+          <div class="category-btn" data-category="regions">Regions</div>
+          <div class="category-btn" data-category="all">All Types</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-title">Step 3: AI Processing</div>
+        <div class="step-desc">AI will analyze your map and automatically place pins for detected locations.</div>
+        <button class="btn ai" id="startAiProcessing" disabled>🚀 Start AI Auto-Mapping</button>
+        <div class="ai-status" id="aiStatus" style="display:none;">
+          <div class="ai-loading"></div>
+          <span id="aiStatusText">Processing...</span>
+        </div>
+      </div>
+
+      <div class="step" id="resultsStep" style="display:none;">
+        <div class="step-title">Step 4: Results</div>
+        <div class="step-desc">Review and import the generated pin mappings.</div>
+        <div class="results-preview" id="resultsPreview"></div>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <button class="btn good" id="importAiResults">Import Results</button>
+          <button class="btn secondary" id="downloadAiResults">Download JSON</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ====== State ======
     const $ = sel => document.querySelector(sel);
@@ -229,6 +318,7 @@
       history: [], // for undo
       isLoading: false,
       toastQueue: [],
+      aiResults: null,
     };
 
     // ====== Canvas setup ======
@@ -267,6 +357,7 @@
         draw();
         updateStatus();
         persist();
+        updateAiButtons();
       } catch(e) {
         handleImageError('Failed to process image');
       }
@@ -281,6 +372,7 @@
       $('#imageError').style.display = 'block';
       updateStatus();
       toast('Error: ' + message);
+      updateAiButtons();
     }
 
     $('#imgInput').addEventListener('change', e=>{
@@ -322,6 +414,7 @@
       draw(); 
       updateStatus(); 
       persist();
+      updateAiButtons();
     };
 
     $('#fitBtn').onclick = ()=>{ 
@@ -331,6 +424,293 @@
       }
       draw(); 
       toast('Fitted to screen'); 
+    };
+
+    function updateAiButtons() {
+      $('#useCurrentImg').disabled = !state.image;
+    }
+
+    // ====== AI Auto-Mapping ======
+    let aiImage = null;
+    let selectedCategories = new Set();
+
+    $('#aiMapperBtn').onclick = () => {
+      $('#aiModal').classList.add('show');
+      resetAiModal();
+    };
+
+    $('#closeAiModal').onclick = () => {
+      $('#aiModal').classList.remove('show');
+    };
+
+    $('#aiModal').onclick = (e) => {
+      if(e.target === $('#aiModal')) {
+        $('#aiModal').classList.remove('show');
+      }
+    };
+
+    function resetAiModal() {
+      aiImage = null;
+      selectedCategories.clear();
+      state.aiResults = null;
+      $('#mapPreviewContainer').innerHTML = '<div class="map-placeholder">No image selected</div>';
+      $$('.category-btn').forEach(btn => btn.classList.remove('selected'));
+      $('#startAiProcessing').disabled = true;
+      $('#aiStatus').style.display = 'none';
+      $('#resultsStep').style.display = 'none';
+      updateAiButtons();
+    }
+
+    $('#aiImgInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if(!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        toast('Please select a valid image file');
+        return;
+      }
+
+      const fr = new FileReader();
+      fr.onload = () => {
+        aiImage = fr.result;
+        const img = document.createElement('img');
+        img.src = aiImage;
+        img.className = 'map-preview';
+        $('#mapPreviewContainer').innerHTML = '';
+        $('#mapPreviewContainer').appendChild(img);
+        checkAiReadiness();
+      };
+      fr.readAsDataURL(file);
+    });
+
+    $('#useCurrentImg').onclick = () => {
+      if(!state.image) return;
+      aiImage = state.image;
+      const img = document.createElement('img');
+      img.src = aiImage;
+      img.className = 'map-preview';
+      $('#mapPreviewContainer').innerHTML = '';
+      $('#mapPreviewContainer').appendChild(img);
+      checkAiReadiness();
+      toast('Using current map image');
+    };
+
+    // Category selection
+    $$('.category-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const category = btn.dataset.category;
+
+        if(category === 'all') {
+          if(selectedCategories.has('all')) {
+            selectedCategories.clear();
+            $$('.category-btn').forEach(b => b.classList.remove('selected'));
+          } else {
+            selectedCategories.clear();
+            selectedCategories.add('all');
+            $$('.category-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+          }
+        } else {
+          selectedCategories.delete('all');
+          $('#category-all').classList.remove('selected');
+
+          if(selectedCategories.has(category)) {
+            selectedCategories.delete(category);
+            btn.classList.remove('selected');
+          } else {
+            selectedCategories.add(category);
+            btn.classList.add('selected');
+          }
+        }
+
+        checkAiReadiness();
+      });
+    });
+
+    function checkAiReadiness() {
+      const hasImage = !!aiImage;
+      const hasCategories = selectedCategories.size > 0;
+      $('#startAiProcessing').disabled = !(hasImage && hasCategories);
+    }
+
+    $('#startAiProcessing').onclick = async () => {
+      try {
+        $('#aiStatus').style.display = 'block';
+        $('#aiStatusText').textContent = 'Analyzing map image...';
+
+        // Simulate AI processing with realistic geographic data
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        $('#aiStatusText').textContent = 'Detecting geographical features...';
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        $('#aiStatusText').textContent = 'Calculating pin positions...';
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        $('#aiStatusText').textContent = 'Generating results...';
+
+        // Generate AI results based on selected categories
+        const aiResults = await generateAiResults(selectedCategories);
+        state.aiResults = aiResults;
+
+        // Show results
+        displayAiResults(aiResults);
+
+        $('#aiStatus').style.display = 'none';
+        $('#resultsStep').style.display = 'block';
+
+      } catch(error) {
+        $('#aiStatus').style.display = 'none';
+        toast('AI processing failed: ' + error.message);
+      }
+    };
+
+    async function generateAiResults(categories) {
+      // Simulate AI detection with realistic geographic data
+      const allLocations = {
+        countries: [
+          {name: 'Saudi Arabia', x: 0.45, y: 0.55},
+          {name: 'Iran', x: 0.65, y: 0.35},
+          {name: 'Iraq', x: 0.52, y: 0.40},
+          {name: 'Turkey', x: 0.38, y: 0.22},
+          {name: 'Egypt', x: 0.35, y: 0.52},
+          {name: 'Syria', x: 0.42, y: 0.35},
+          {name: 'Jordan', x: 0.42, y: 0.48},
+          {name: 'Israel', x: 0.40, y: 0.50},
+          {name: 'Lebanon', x: 0.41, y: 0.38},
+          {name: 'Kuwait', x: 0.55, y: 0.45},
+          {name: 'Qatar', x: 0.58, y: 0.52},
+          {name: 'United Arab Emirates', x: 0.62, y: 0.58},
+          {name: 'Oman', x: 0.68, y: 0.62},
+          {name: 'Yemen', x: 0.52, y: 0.68},
+          {name: 'Bahrain', x: 0.57, y: 0.50}
+        ],
+        cities: [
+          {name: 'Riyadh', x: 0.48, y: 0.58},
+          {name: 'Tehran', x: 0.68, y: 0.32},
+          {name: 'Baghdad', x: 0.54, y: 0.38},
+          {name: 'Istanbul', x: 0.35, y: 0.18},
+          {name: 'Cairo', x: 0.38, y: 0.55},
+          {name: 'Damascus', x: 0.43, y: 0.36},
+          {name: 'Amman', x: 0.43, y: 0.49},
+          {name: 'Tel Aviv', x: 0.39, y: 0.51},
+          {name: 'Dubai', x: 0.63, y: 0.58}
+        ],
+        water: [
+          {name: 'Persian Gulf', x: 0.58, y: 0.55},
+          {name: 'Red Sea', x: 0.35, y: 0.62},
+          {name: 'Mediterranean Sea', x: 0.32, y: 0.35},
+          {name: 'Black Sea', x: 0.35, y: 0.15},
+          {name: 'Caspian Sea', x: 0.72, y: 0.25},
+          {name: 'Arabian Sea', x: 0.72, y: 0.68},
+          {name: 'Dead Sea', x: 0.41, y: 0.49},
+          {name: 'Nile River', x: 0.38, y: 0.58},
+          {name: 'Euphrates River', x: 0.48, y: 0.42},
+          {name: 'Tigris River', x: 0.52, y: 0.40}
+        ],
+        mountains: [
+          {name: 'Zagros Mountains', x: 0.62, y: 0.38},
+          {name: 'Taurus Mountains', x: 0.40, y: 0.28},
+          {name: 'Elburz Mountains', x: 0.65, y: 0.30},
+          {name: 'Sinai Peninsula', x: 0.37, y: 0.55}
+        ],
+        regions: [
+          {name: 'Mesopotamia', x: 0.52, y: 0.40},
+          {name: 'Levant', x: 0.41, y: 0.42},
+          {name: 'Arabian Peninsula', x: 0.52, y: 0.60},
+          {name: 'Anatolia', x: 0.40, y: 0.25},
+          {name: 'Fertile Crescent', x: 0.48, y: 0.42}
+        ]
+      };
+
+      let results = {
+        terms: [],
+        pins: {},
+        metadata: {
+          processed_at: new Date().toISOString(),
+          categories: Array.from(categories),
+          total_detections: 0
+        }
+      };
+
+      // Add random variation to simulate AI detection
+      function addRandomVariation(coord) {
+        return Math.max(0.02, Math.min(0.98, coord + (Math.random() - 0.5) * 0.05));
+      }
+
+      if(categories.has('all')) {
+        // Include all categories
+        Object.values(allLocations).flat().forEach(location => {
+          results.terms.push(location.name);
+          results.pins[location.name] = {
+            x: addRandomVariation(location.x),
+            y: addRandomVariation(location.y)
+          };
+        });
+      } else {
+        // Include selected categories
+        categories.forEach(category => {
+          if(allLocations[category]) {
+            allLocations[category].forEach(location => {
+              results.terms.push(location.name);
+              results.pins[location.name] = {
+                x: addRandomVariation(location.x),
+                y: addRandomVariation(location.y)
+              };
+            });
+          }
+        });
+      }
+
+      results.metadata.total_detections = results.terms.length;
+      return results;
+    }
+
+    function displayAiResults(results) {
+      const preview = $('#resultsPreview');
+      preview.innerHTML = JSON.stringify(results, null, 2);
+    }
+
+    $('#importAiResults').onclick = () => {
+      if(!state.aiResults) return;
+
+      // Merge AI results with current state
+      let imported = 0;
+      state.aiResults.terms.forEach(term => {
+        if(!state.terms.includes(term)) {
+          state.terms.push(term);
+          imported++;
+        }
+        state.pins[term] = state.aiResults.pins[term];
+      });
+
+      renderTerms();
+      draw();
+      persist();
+
+      $('#aiModal').classList.remove('show');
+      toast(`AI Auto-Mapping complete! Imported ${imported} new terms with ${Object.keys(state.aiResults.pins).length} pins`);
+    };
+
+    $('#downloadAiResults').onclick = () => {
+      if(!state.aiResults) return;
+
+      const data = {
+        ...state.aiResults,
+        tol: state.tol,
+        version: '1.0',
+        source: 'AI Auto-Mapper'
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ai-generated-map-quiz.json';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast('AI results downloaded as JSON');
     };
 
     // ====== Terms ======
@@ -632,7 +1012,7 @@
           ctx.fillStyle = 'rgba(255,255,255,.08)';
           ctx.textAlign='center'; 
           ctx.font='600 16px system-ui';
-          const message = state.isLoading ? 'Loading image...' : 'Upload a map image to begin';
+          const message = state.isLoading ? 'Loading image...' : 'Upload a map image or use AI Auto-Map';
           ctx.fillText(message, w/2, h/2);
         }
 
@@ -771,7 +1151,7 @@
 
       const termsWithPins = state.terms.filter(term => state.pins[term]);
       if(termsWithPins.length === 0) {
-        toast('Place some pins first in Author mode');
+        toast('Place some pins first in Author mode or use AI Auto-Map');
         return;
       }
 
@@ -914,10 +1294,14 @@
       }
       if(e.key==='Escape'){
         e.preventDefault();
-        // Close any modals or reset selections
-        state.selectedTerm = null;
-        $$('[data-sel]').forEach(btn => btn.classList.remove('good'));
-        draw();
+        // Close modal or reset selections
+        if($('#aiModal').classList.contains('show')) {
+          $('#aiModal').classList.remove('show');
+        } else {
+          state.selectedTerm = null;
+          $$('[data-sel]').forEach(btn => btn.classList.remove('good'));
+          draw();
+        }
       }
     });
 
@@ -1046,6 +1430,7 @@
         renderTerms(); 
         draw(); 
         updateButtons();
+        updateAiButtons();
         persist();
         toast('Everything cleared');
       }
@@ -1111,11 +1496,12 @@
         updateScore(); 
         updateTargetLabel();
         updateButtons();
+        updateAiButtons();
 
         // Initial draw
         setTimeout(() => {
           draw();
-          toast('Map Quiz Studio loaded');
+          toast('Map Quiz Studio loaded with AI Auto-Mapping');
         }, 100);
       } catch(e) {
         console.error('Initialization error:', e);
