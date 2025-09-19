@@ -128,7 +128,6 @@
       transition:transform .12s;
     }
     .action-main:active { transform: scale(.97);}
-    /* Misc tweaks */
     ::selection{background: #ffeb88;color:#253;}
     .tip { font-size:13px;color:var(--accent);margin-bottom:8px;}
     .panel::-webkit-scrollbar{width:7px;background:rgba(56,70,120,0.12);}
@@ -223,7 +222,7 @@
         if (!img.src || img.src !== state.img) {
           img.onload = drawCanvas;
           img.src = state.img;
-          return; // wait for load to complete before drawing image
+          return;
         }
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       } else {
@@ -257,8 +256,16 @@
       reader.readAsDataURL(f);
     };
     el('fit').onclick = fitCanvas;
-    el('addTermBtn').onclick = () => { let v=el('addTerm').value.trim(); if(!v||state.terms.includes(v))return; state.terms.push(v); saveState(); el('addTerm').value=''; updateTerms(); };
-    el('addTerm').onkeypress = e=>{ if(e.key=='Enter') el('addTermBtn').onclick(); };
+    el('addTermBtn').onclick = addTermEvent;
+    el('addTerm').onkeypress = e=>{ if(e.key==='Enter') addTermEvent(); };
+    function addTermEvent() {
+      let v=el('addTerm').value.trim();
+      if(!v||state.terms.includes(v))return;
+      state.terms.push(v);
+      saveState();
+      el('addTerm').value='';
+      updateTerms();
+    }
     el('clearTerms').onclick = ()=>{ state.terms = []; state.pins = []; saveState(); updateTerms(); drawCanvas(); };
     function updateTerms() {
       let out = '';
@@ -269,7 +276,13 @@
       el('total').textContent = state.terms.length;
       saveState();
     }
-    window.delTerm = idx => { state.terms.splice(idx,1); state.pins = state.pins.filter(p=>p.termIdx!=idx); saveState(); updateTerms(); drawCanvas(); };
+    window.delTerm = idx => { 
+      state.terms.splice(idx,1); 
+      state.pins = state.pins.filter(p=>p.termIdx!=idx); 
+      saveState(); 
+      updateTerms(); 
+      drawCanvas(); 
+    };
     function updateUI() {
       el('score').textContent = state.score;
       el('streak').textContent = state.streak;
