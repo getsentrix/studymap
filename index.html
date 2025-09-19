@@ -298,10 +298,53 @@
   </div>
 
   <script>
-    // ====== State ======
-    const $ = sel => document.querySelector(sel);
-    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    // ====== SAFE DOM HELPERS ======
+    const $ = sel => {
+      try {
+        return document.querySelector(sel);
+      } catch(e) {
+        console.warn('Invalid selector:', sel);
+        return null;
+      }
+    };
 
+    const $$ = sel => {
+      try {
+        return Array.from(document.querySelectorAll(sel));
+      } catch(e) {
+        console.warn('Invalid selector:', sel);
+        return [];
+      }
+    };
+
+    // Safe classList operations
+    const safeAddClass = (element, className) => {
+      if(element && element.classList) {
+        element.classList.add(className);
+      }
+    };
+
+    const safeRemoveClass = (element, className) => {
+      if(element && element.classList) {
+        element.classList.remove(className);
+      }
+    };
+
+    const safeToggleClass = (element, className, force) => {
+      if(element && element.classList) {
+        return element.classList.toggle(className, force);
+      }
+      return false;
+    };
+
+    const safeHasClass = (element, className) => {
+      if(element && element.classList) {
+        return element.classList.contains(className);
+      }
+      return false;
+    };
+
+    // ====== State ======
     const state = {
       mode: 'author', // 'author' | 'quiz' | 'flash'
       image: null,
@@ -323,14 +366,19 @@
 
     // ====== Canvas setup ======
     const canvas = $('#canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas ? canvas.getContext('2d') : null;
     let resizeTimeout;
 
     function resizeCanvas(){
+      if(!canvas || !ctx) return;
+
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         try {
-          const rect = $('#stage').getBoundingClientRect();
+          const stage = $('#stage');
+          if(!stage) return;
+
+          const rect = stage.getBoundingClientRect();
           const dpr = window.devicePixelRatio || 1;
           canvas.width = rect.width * dpr; 
           canvas.height = rect.height * dpr;
@@ -352,7 +400,8 @@
       try {
         state.imageNatural = {w: imgEl.naturalWidth || 1, h: imgEl.naturalHeight || 1};
         state.isLoading = false;
-        $('#imageError').style.display = 'none';
+        const imageError = $('#imageError');
+        if(imageError) imageError.style.display = 'none';
         toast('Image loaded successfully');
         draw();
         updateStatus();
@@ -368,132 +417,186 @@
     function handleImageError(message) {
       state.isLoading = false;
       state.image = null;
-      $('#imageError').textContent = message;
-      $('#imageError').style.display = 'block';
+      const imageError = $('#imageError');
+      if(imageError) {
+        imageError.textContent = message;
+        imageError.style.display = 'block';
+      }
       updateStatus();
       toast('Error: ' + message);
       updateAiButtons();
     }
 
-    $('#imgInput').addEventListener('change', e=>{
-      const file = e.target.files[0]; 
-      if(!file) return;
+    const imgInput = $('#imgInput');
+    if(imgInput) {
+      imgInput.addEventListener('change', e=>{
+        const file = e.target.files[0]; 
+        if(!file) return;
 
-      // Validate file
-      if (!file.type.startsWith('image/')) {
-        handleImageError('Please select a valid image file');
-        return;
-      }
-
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        handleImageError('Image too large. Please use an image under 10MB');
-        return;
-      }
-
-      state.isLoading = true;
-      updateStatus();
-
-      const fr = new FileReader();
-      fr.onload = () => { 
-        try {
-          imgEl.src = fr.result; 
-          state.image = fr.result; 
-        } catch(e) {
-          handleImageError('Failed to read image file');
+        // Validate file
+        if (!file.type.startsWith('image/')) {
+          handleImageError('Please select a valid image file');
+          return;
         }
+
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+          handleImageError('Image too large. Please use an image under 10MB');
+          return;
+        }
+
+        state.isLoading = true;
+        updateStatus();
+
+        const fr = new FileReader();
+        fr.onload = () => { 
+          try {
+            imgEl.src = fr.result; 
+            state.image = fr.result; 
+          } catch(e) {
+            handleImageError('Failed to read image file');
+          }
+        };
+        fr.onerror = () => handleImageError('Failed to read file');
+        fr.readAsDataURL(file);
+      });
+    }
+
+    const clearImgBtn = $('#clearImgBtn');
+    if(clearImgBtn) {
+      clearImgBtn.onclick = ()=>{ 
+        state.image=null; 
+        imgEl.src=''; 
+        state.imageNatural = {w:0,h:0};
+        const imageError = $('#imageError');
+        if(imageError) imageError.style.display = 'none';
+        draw(); 
+        updateStatus(); 
+        persist();
+        updateAiButtons();
       };
-      fr.onerror = () => handleImageError('Failed to read file');
-      fr.readAsDataURL(file);
-    });
+    }
 
-    $('#clearImgBtn').onclick = ()=>{ 
-      state.image=null; 
-      imgEl.src=''; 
-      state.imageNatural = {w:0,h:0};
-      $('#imageError').style.display = 'none';
-      draw(); 
-      updateStatus(); 
-      persist();
-      updateAiButtons();
-    };
-
-    $('#fitBtn').onclick = ()=>{ 
-      if(!state.image) {
-        toast('No image to fit');
-        return;
-      }
-      draw(); 
-      toast('Fitted to screen'); 
-    };
+    const fitBtn = $('#fitBtn');
+    if(fitBtn) {
+      fitBtn.onclick = ()=>{ 
+        if(!state.image) {
+          toast('No image to fit');
+          return;
+        }
+        draw(); 
+        toast('Fitted to screen'); 
+      };
+    }
 
     function updateAiButtons() {
-      $('#useCurrentImg').disabled = !state.image;
+      const useCurrentImg = $('#useCurrentImg');
+      if(useCurrentImg) {
+        useCurrentImg.disabled = !state.image;
+      }
     }
 
     // ====== AI Auto-Mapping ======
     let aiImage = null;
     let selectedCategories = new Set();
 
-    $('#aiMapperBtn').onclick = () => {
-      $('#aiModal').classList.add('show');
-      resetAiModal();
-    };
+    const aiMapperBtn = $('#aiMapperBtn');
+    if(aiMapperBtn) {
+      aiMapperBtn.onclick = () => {
+        const aiModal = $('#aiModal');
+        if(aiModal) {
+          safeAddClass(aiModal, 'show');
+          resetAiModal();
+        }
+      };
+    }
 
-    $('#closeAiModal').onclick = () => {
-      $('#aiModal').classList.remove('show');
-    };
+    const closeAiModal = $('#closeAiModal');
+    if(closeAiModal) {
+      closeAiModal.onclick = () => {
+        const aiModal = $('#aiModal');
+        if(aiModal) {
+          safeRemoveClass(aiModal, 'show');
+        }
+      };
+    }
 
-    $('#aiModal').onclick = (e) => {
-      if(e.target === $('#aiModal')) {
-        $('#aiModal').classList.remove('show');
-      }
-    };
+    const aiModal = $('#aiModal');
+    if(aiModal) {
+      aiModal.onclick = (e) => {
+        if(e.target === aiModal) {
+          safeRemoveClass(aiModal, 'show');
+        }
+      };
+    }
 
     function resetAiModal() {
       aiImage = null;
       selectedCategories.clear();
       state.aiResults = null;
-      $('#mapPreviewContainer').innerHTML = '<div class="map-placeholder">No image selected</div>';
-      $$('.category-btn').forEach(btn => btn.classList.remove('selected'));
-      $('#startAiProcessing').disabled = true;
-      $('#aiStatus').style.display = 'none';
-      $('#resultsStep').style.display = 'none';
+      const mapPreviewContainer = $('#mapPreviewContainer');
+      if(mapPreviewContainer) {
+        mapPreviewContainer.innerHTML = '<div class="map-placeholder">No image selected</div>';
+      }
+
+      $$('.category-btn').forEach(btn => safeRemoveClass(btn, 'selected'));
+
+      const startAiProcessing = $('#startAiProcessing');
+      if(startAiProcessing) startAiProcessing.disabled = true;
+
+      const aiStatus = $('#aiStatus');
+      if(aiStatus) aiStatus.style.display = 'none';
+
+      const resultsStep = $('#resultsStep');
+      if(resultsStep) resultsStep.style.display = 'none';
+
       updateAiButtons();
     }
 
-    $('#aiImgInput').addEventListener('change', e => {
-      const file = e.target.files[0];
-      if(!file) return;
+    const aiImgInput = $('#aiImgInput');
+    if(aiImgInput) {
+      aiImgInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if(!file) return;
 
-      if (!file.type.startsWith('image/')) {
-        toast('Please select a valid image file');
-        return;
-      }
+        if (!file.type.startsWith('image/')) {
+          toast('Please select a valid image file');
+          return;
+        }
 
-      const fr = new FileReader();
-      fr.onload = () => {
-        aiImage = fr.result;
+        const fr = new FileReader();
+        fr.onload = () => {
+          aiImage = fr.result;
+          const img = document.createElement('img');
+          img.src = aiImage;
+          img.className = 'map-preview';
+          const mapPreviewContainer = $('#mapPreviewContainer');
+          if(mapPreviewContainer) {
+            mapPreviewContainer.innerHTML = '';
+            mapPreviewContainer.appendChild(img);
+          }
+          checkAiReadiness();
+        };
+        fr.readAsDataURL(file);
+      });
+    }
+
+    const useCurrentImg = $('#useCurrentImg');
+    if(useCurrentImg) {
+      useCurrentImg.onclick = () => {
+        if(!state.image) return;
+        aiImage = state.image;
         const img = document.createElement('img');
         img.src = aiImage;
         img.className = 'map-preview';
-        $('#mapPreviewContainer').innerHTML = '';
-        $('#mapPreviewContainer').appendChild(img);
+        const mapPreviewContainer = $('#mapPreviewContainer');
+        if(mapPreviewContainer) {
+          mapPreviewContainer.innerHTML = '';
+          mapPreviewContainer.appendChild(img);
+        }
         checkAiReadiness();
+        toast('Using current map image');
       };
-      fr.readAsDataURL(file);
-    });
-
-    $('#useCurrentImg').onclick = () => {
-      if(!state.image) return;
-      aiImage = state.image;
-      const img = document.createElement('img');
-      img.src = aiImage;
-      img.className = 'map-preview';
-      $('#mapPreviewContainer').innerHTML = '';
-      $('#mapPreviewContainer').appendChild(img);
-      checkAiReadiness();
-      toast('Using current map image');
-    };
+    }
 
     // Category selection
     $$('.category-btn').forEach(btn => {
@@ -503,23 +606,24 @@
         if(category === 'all') {
           if(selectedCategories.has('all')) {
             selectedCategories.clear();
-            $$('.category-btn').forEach(b => b.classList.remove('selected'));
+            $$('.category-btn').forEach(b => safeRemoveClass(b, 'selected'));
           } else {
             selectedCategories.clear();
             selectedCategories.add('all');
-            $$('.category-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
+            $$('.category-btn').forEach(b => safeRemoveClass(b, 'selected'));
+            safeAddClass(btn, 'selected');
           }
         } else {
           selectedCategories.delete('all');
-          $('#category-all').classList.remove('selected');
+          const allBtn = $$('.category-btn').find(b => b.dataset.category === 'all');
+          if(allBtn) safeRemoveClass(allBtn, 'selected');
 
           if(selectedCategories.has(category)) {
             selectedCategories.delete(category);
-            btn.classList.remove('selected');
+            safeRemoveClass(btn, 'selected');
           } else {
             selectedCategories.add(category);
-            btn.classList.add('selected');
+            safeAddClass(btn, 'selected');
           }
         }
 
@@ -530,40 +634,51 @@
     function checkAiReadiness() {
       const hasImage = !!aiImage;
       const hasCategories = selectedCategories.size > 0;
-      $('#startAiProcessing').disabled = !(hasImage && hasCategories);
+      const startAiProcessing = $('#startAiProcessing');
+      if(startAiProcessing) {
+        startAiProcessing.disabled = !(hasImage && hasCategories);
+      }
     }
 
-    $('#startAiProcessing').onclick = async () => {
-      try {
-        $('#aiStatus').style.display = 'block';
-        $('#aiStatusText').textContent = 'Analyzing map image...';
+    const startAiProcessing = $('#startAiProcessing');
+    if(startAiProcessing) {
+      startAiProcessing.onclick = async () => {
+        try {
+          const aiStatus = $('#aiStatus');
+          const aiStatusText = $('#aiStatusText');
 
-        // Simulate AI processing with realistic geographic data
-        await new Promise(resolve => setTimeout(resolve, 2000));
+          if(aiStatus) aiStatus.style.display = 'block';
+          if(aiStatusText) aiStatusText.textContent = 'Analyzing map image...';
 
-        $('#aiStatusText').textContent = 'Detecting geographical features...';
-        await new Promise(resolve => setTimeout(resolve, 1500));
+          // Simulate AI processing with realistic geographic data
+          await new Promise(resolve => setTimeout(resolve, 2000));
 
-        $('#aiStatusText').textContent = 'Calculating pin positions...';
-        await new Promise(resolve => setTimeout(resolve, 1000));
+          if(aiStatusText) aiStatusText.textContent = 'Detecting geographical features...';
+          await new Promise(resolve => setTimeout(resolve, 1500));
 
-        $('#aiStatusText').textContent = 'Generating results...';
+          if(aiStatusText) aiStatusText.textContent = 'Calculating pin positions...';
+          await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Generate AI results based on selected categories
-        const aiResults = await generateAiResults(selectedCategories);
-        state.aiResults = aiResults;
+          if(aiStatusText) aiStatusText.textContent = 'Generating results...';
 
-        // Show results
-        displayAiResults(aiResults);
+          // Generate AI results based on selected categories
+          const aiResults = await generateAiResults(selectedCategories);
+          state.aiResults = aiResults;
 
-        $('#aiStatus').style.display = 'none';
-        $('#resultsStep').style.display = 'block';
+          // Show results
+          displayAiResults(aiResults);
 
-      } catch(error) {
-        $('#aiStatus').style.display = 'none';
-        toast('AI processing failed: ' + error.message);
-      }
-    };
+          if(aiStatus) aiStatus.style.display = 'none';
+          const resultsStep = $('#resultsStep');
+          if(resultsStep) resultsStep.style.display = 'block';
+
+        } catch(error) {
+          const aiStatus = $('#aiStatus');
+          if(aiStatus) aiStatus.style.display = 'none';
+          toast('AI processing failed: ' + error.message);
+        }
+      };
+    }
 
     async function generateAiResults(categories) {
       // Simulate AI detection with realistic geographic data
@@ -668,54 +783,65 @@
 
     function displayAiResults(results) {
       const preview = $('#resultsPreview');
-      preview.innerHTML = JSON.stringify(results, null, 2);
+      if(preview) {
+        preview.innerHTML = JSON.stringify(results, null, 2);
+      }
     }
 
-    $('#importAiResults').onclick = () => {
-      if(!state.aiResults) return;
+    const importAiResults = $('#importAiResults');
+    if(importAiResults) {
+      importAiResults.onclick = () => {
+        if(!state.aiResults) return;
 
-      // Merge AI results with current state
-      let imported = 0;
-      state.aiResults.terms.forEach(term => {
-        if(!state.terms.includes(term)) {
-          state.terms.push(term);
-          imported++;
-        }
-        state.pins[term] = state.aiResults.pins[term];
-      });
+        // Merge AI results with current state
+        let imported = 0;
+        state.aiResults.terms.forEach(term => {
+          if(!state.terms.includes(term)) {
+            state.terms.push(term);
+            imported++;
+          }
+          state.pins[term] = state.aiResults.pins[term];
+        });
 
-      renderTerms();
-      draw();
-      persist();
+        renderTerms();
+        draw();
+        persist();
 
-      $('#aiModal').classList.remove('show');
-      toast(`AI Auto-Mapping complete! Imported ${imported} new terms with ${Object.keys(state.aiResults.pins).length} pins`);
-    };
-
-    $('#downloadAiResults').onclick = () => {
-      if(!state.aiResults) return;
-
-      const data = {
-        ...state.aiResults,
-        tol: state.tol,
-        version: '1.0',
-        source: 'AI Auto-Mapper'
+        const aiModal = $('#aiModal');
+        if(aiModal) safeRemoveClass(aiModal, 'show');
+        toast(`AI Auto-Mapping complete! Imported ${imported} new terms with ${Object.keys(state.aiResults.pins).length} pins`);
       };
+    }
 
-      const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'ai-generated-map-quiz.json';
-      a.click();
-      URL.revokeObjectURL(url);
+    const downloadAiResults = $('#downloadAiResults');
+    if(downloadAiResults) {
+      downloadAiResults.onclick = () => {
+        if(!state.aiResults) return;
 
-      toast('AI results downloaded as JSON');
-    };
+        const data = {
+          ...state.aiResults,
+          tol: state.tol,
+          version: '1.0',
+          source: 'AI Auto-Mapper'
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ai-generated-map-quiz.json';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        toast('AI results downloaded as JSON');
+      };
+    }
 
     // ====== Terms ======
     function renderTerms(){
       const list = $('#termList');
+      if(!list) return;
+
       list.innerHTML = '';
       state.terms.forEach(t =>{
         const row = document.createElement('div');
@@ -728,9 +854,13 @@
           </span>`;
         list.appendChild(row);
       });
-      $('#total').textContent = state.terms.length;
+
+      const total = $('#total');
+      if(total) total.textContent = state.terms.length;
+
       const progress = Math.min(state.quizIndex + 1, state.terms.length);
-      $('#fcProgress').textContent = `${progress} / ${state.terms.length}`;
+      const fcProgress = $('#fcProgress');
+      if(fcProgress) fcProgress.textContent = `${progress} / ${state.terms.length}`;
     }
 
     function addTerm(t){
@@ -753,52 +883,66 @@
       return true;
     }
 
-    $('#addTerm').onclick = ()=>{ 
-      if(addTerm($('#termInput').value)) {
-        $('#termInput').value=''; 
-      }
-    };
+    const addTermBtn = $('#addTerm');
+    if(addTermBtn) {
+      addTermBtn.onclick = ()=>{ 
+        const termInput = $('#termInput');
+        if(termInput && addTerm(termInput.value)) {
+          termInput.value=''; 
+        }
+      };
+    }
 
-    $('#termInput').addEventListener('keyup', e=>{ 
-      if(e.key==='Enter'){ 
-        $('#addTerm').click(); 
-      }
-    });
+    const termInput = $('#termInput');
+    if(termInput) {
+      termInput.addEventListener('keyup', e=>{ 
+        if(e.key==='Enter'){ 
+          const addTermBtn = $('#addTerm');
+          if(addTermBtn) addTermBtn.click(); 
+        }
+      });
+    }
 
-    $('#termList').addEventListener('click', e=>{
-      const del = e.target.getAttribute('data-del');
-      const sel = e.target.getAttribute('data-sel');
-      if(del){
-        if(confirm(`Delete term "${del}"?`)) {
-          state.terms = state.terms.filter(x=>x!==del);
-          delete state.pins[del];
-          if(state.selectedTerm === del) state.selectedTerm = null;
+    const termList = $('#termList');
+    if(termList) {
+      termList.addEventListener('click', e=>{
+        const del = e.target.getAttribute('data-del');
+        const sel = e.target.getAttribute('data-sel');
+        if(del){
+          if(confirm(`Delete term "${del}"?`)) {
+            state.terms = state.terms.filter(x=>x!==del);
+            delete state.pins[del];
+            if(state.selectedTerm === del) state.selectedTerm = null;
+            renderTerms(); 
+            draw(); 
+            persist();
+            toast('Term deleted');
+          }
+        }
+        if(sel){ 
+          state.selectedTerm = sel; 
+          toast('Selected: '+sel);
+          // Highlight selected term visually
+          $$('[data-sel]').forEach(btn => safeRemoveClass(btn, 'good'));
+          safeAddClass(e.target, 'good');
+        } 
+      });
+    }
+
+    const clearTerms = $('#clearTerms');
+    if(clearTerms) {
+      clearTerms.onclick = ()=>{ 
+        if(confirm('Clear all terms and pins?')) {
+          state.terms=[]; 
+          state.pins={}; 
+          state.selectedTerm = null;
           renderTerms(); 
           draw(); 
           persist();
-          toast('Term deleted');
+          toast('All terms cleared');
         }
-      }
-      if(sel){ 
-        state.selectedTerm = sel; 
-        toast('Selected: '+sel);
-        // Highlight selected term visually
-        $$('[data-sel]').forEach(btn => btn.classList.remove('good'));
-        e.target.classList.add('good');
-      } 
-    });
-
-    $('#clearTerms').onclick = ()=>{ 
-      if(confirm('Clear all terms and pins?')) {
-        state.terms=[]; 
-        state.pins={}; 
-        state.selectedTerm = null;
-        renderTerms(); 
-        draw(); 
-        persist();
-        toast('All terms cleared');
-      }
-    };
+      };
+    }
 
     // Packs
     const PACKS = {
@@ -836,15 +980,21 @@
       state.mode = m; 
 
       // Update UI
-      $$('.mode-toggle .btn').forEach(b => b.classList.remove('good'));
-      $(`[data-mode="${m}"]`).classList.add('good');
+      $$('.mode-toggle .btn').forEach(b => safeRemoveClass(b, 'good'));
+      const modeBtn = $(`[data-mode="${m}"]`);
+      if(modeBtn) safeAddClass(modeBtn, 'good');
 
-      $('#modeLabel').textContent = m==='author' ? 'Author mode' : m==='quiz' ? 'Quiz mode' : 'Flashcards';
-      $('#flash').classList.toggle('show', m==='flash');
+      const modeLabel = $('#modeLabel');
+      if(modeLabel) {
+        modeLabel.textContent = m==='author' ? 'Author mode' : m==='quiz' ? 'Quiz mode' : 'Flashcards';
+      }
+
+      const flash = $('#flash');
+      if(flash) safeToggleClass(flash, 'show', m==='flash');
 
       // Reset selections
       state.selectedTerm = null;
-      $$('[data-sel]').forEach(btn => btn.classList.remove('good'));
+      $$('[data-sel]').forEach(btn => safeRemoveClass(btn, 'good'));
 
       draw();
       updateButtons();
@@ -855,20 +1005,31 @@
       const hasImage = !!state.image;
       const hasPins = Object.keys(state.pins).length > 0;
 
-      $('#startQuiz').disabled = !hasTerms;
-      $('#revealBtn').disabled = state.mode !== 'quiz' || !currentTarget();
-      $('#showPins').disabled = !hasPins;
-      $('#undoBtn').disabled = state.history.length === 0;
+      const startQuiz = $('#startQuiz');
+      if(startQuiz) startQuiz.disabled = !hasTerms;
+
+      const revealBtn = $('#revealBtn');
+      if(revealBtn) revealBtn.disabled = state.mode !== 'quiz' || !currentTarget();
+
+      const showPins = $('#showPins');
+      if(showPins) showPins.disabled = !hasPins;
+
+      const undoBtn = $('#undoBtn');
+      if(undoBtn) undoBtn.disabled = state.history.length === 0;
     }
 
     // ====== Canvas interaction ======
     let draggingKey = null;
     let dragStartPos = null;
 
-    canvas.addEventListener('mousedown', onPointerDown);
-    canvas.addEventListener('touchstart', onPointerDown, {passive:false});
+    if(canvas) {
+      canvas.addEventListener('mousedown', onPointerDown);
+      canvas.addEventListener('touchstart', onPointerDown, {passive:false});
+    }
 
     function getPos(evt){
+      if(!canvas) return {x:0, y:0, w:1, h:1};
+
       const rect = canvas.getBoundingClientRect();
       const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
       const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
@@ -965,6 +1126,8 @@
     }
 
     function hitTest(px,py){
+      if(!canvas) return null;
+
       const tolerance = 20;
       for(const [term,p] of Object.entries(state.pins)){
         const rect = canvas.getBoundingClientRect();
@@ -988,6 +1151,8 @@
 
     // ====== Drawing ======
     function draw(){
+      if(!canvas || !ctx) return;
+
       try {
         const rect = canvas.getBoundingClientRect();
         const w = rect.width, h = rect.height;
@@ -1032,7 +1197,7 @@
     }
 
     function drawPin(x,y, label, isSelected = false){
-      if(isNaN(x) || isNaN(y)) return;
+      if(!ctx || isNaN(x) || isNaN(y)) return;
 
       ctx.save();
 
@@ -1050,7 +1215,8 @@
       ctx.textBaseline='bottom';
       const pad = 6; 
       const textWidth = Math.min(ctx.measureText(label).width + pad*2, 150);
-      const bx = clamp(x - textWidth/2, 4, canvas.getBoundingClientRect().width - textWidth - 4);
+      const canvasRect = canvas ? canvas.getBoundingClientRect() : {width: 800};
+      const bx = clamp(x - textWidth/2, 4, canvasRect.width - textWidth - 4);
       const by = y - 16;
 
       ctx.fillStyle = 'rgba(12,18,44,.85)';
@@ -1080,6 +1246,8 @@
 
     function updateStatus(){
       const status = $('#status');
+      if(!status) return;
+
       if(state.isLoading) {
         status.textContent = 'Loading...';
         status.className = 'pill loading';
@@ -1093,13 +1261,19 @@
     }
 
     function updateScore(){
-      $('#score').textContent = state.score; 
-      $('#total').textContent = state.terms.length;
-      $('#streak').textContent = state.streak;
+      const score = $('#score');
+      if(score) score.textContent = state.score;
+
+      const total = $('#total');
+      if(total) total.textContent = state.terms.length;
+
+      const streak = $('#streak');
+      if(streak) streak.textContent = state.streak;
     }
 
     function updateTargetLabel(){
-      $('#targetName').textContent = currentTarget() || '—';
+      const targetName = $('#targetName');
+      if(targetName) targetName.textContent = currentTarget() || '—';
     }
 
     // ====== Toast system ======
@@ -1112,25 +1286,27 @@
       if(state.toastQueue.length === 0) return;
 
       const el = $('#toast'); 
-      if(el.classList.contains('show')) return; // Wait for current toast
+      if(!el || safeHasClass(el, 'show')) return; // Wait for current toast
 
       const msg = state.toastQueue.shift();
       el.textContent = msg; 
-      el.classList.remove('show'); 
+      safeRemoveClass(el, 'show'); 
       void el.offsetWidth; 
-      el.classList.add('show');
+      safeAddClass(el, 'show');
 
       setTimeout(() => {
-        el.classList.remove('show');
+        safeRemoveClass(el, 'show');
         setTimeout(showNextToast, 200); // Show next toast after delay
       }, 1600);
     }
 
     function flashShake(){
       const st = $('#stage'); 
-      st.classList.remove('shake'); 
+      if(!st) return;
+
+      safeRemoveClass(st, 'shake'); 
       void st.offsetWidth; 
-      st.classList.add('shake');
+      safeAddClass(st, 'shake');
     }
 
     // ====== Quiz logic ======
@@ -1181,53 +1357,70 @@
       updateScore();
     }
 
-    $('#startQuiz').onclick = startQuiz;
-    $('#nextBtn').onclick = nextTarget;
-    $('#revealBtn').onclick = ()=>{
-      const term = currentTarget(); 
-      if(!term) {
-        toast('No active target');
-        return;
-      }
-      const p = state.pins[term]; 
-      if(!p) { 
-        toast('No pin for this term'); 
-        return; 
-      }
-      const rect = canvas.getBoundingClientRect();
-      revealPing(p.x * rect.width, p.y * rect.height);
-      toast(`Answer: ${term}`);
-    };
+    const startQuizBtn = $('#startQuiz');
+    if(startQuizBtn) startQuizBtn.onclick = startQuiz;
+
+    const nextBtn = $('#nextBtn');
+    if(nextBtn) nextBtn.onclick = nextTarget;
+
+    const revealBtn = $('#revealBtn');
+    if(revealBtn) {
+      revealBtn.onclick = ()=>{
+        const term = currentTarget(); 
+        if(!term) {
+          toast('No active target');
+          return;
+        }
+        const p = state.pins[term]; 
+        if(!p) { 
+          toast('No pin for this term'); 
+          return; 
+        }
+        const rect = canvas ? canvas.getBoundingClientRect() : {width: 800, height: 600};
+        revealPing(p.x * rect.width, p.y * rect.height);
+        toast(`Answer: ${term}`);
+      };
+    }
 
     // Pins toggle
-    $('#showPins').onclick = ()=>{ 
-      state.showPins = !state.showPins; 
-      draw(); 
-      toast(state.showPins ? 'Pins shown' : 'Pins hidden');
-    };
+    const showPins = $('#showPins');
+    if(showPins) {
+      showPins.onclick = ()=>{ 
+        state.showPins = !state.showPins; 
+        draw(); 
+        toast(state.showPins ? 'Pins shown' : 'Pins hidden');
+      };
+    }
 
     // Tolerance
-    $('#tol').addEventListener('input', e=>{ 
-      state.tol = +e.target.value; 
-      $('#tolVal').textContent = state.tol; 
-      persist();
-    });
+    const tolInput = $('#tol');
+    if(tolInput) {
+      tolInput.addEventListener('input', e=>{ 
+        state.tol = +e.target.value; 
+        const tolVal = $('#tolVal');
+        if(tolVal) tolVal.textContent = state.tol; 
+        persist();
+      });
+    }
 
     // Undo
-    $('#undoBtn').onclick = ()=>{
-      const last = state.history.pop();
-      if(!last) {
-        toast('Nothing to undo');
-        return;
-      }
-      if(last.type==='place'){
-        delete state.pins[last.term]; 
-        draw();
-        persist();
-        toast('Undone pin placement');
-      }
-      updateButtons();
-    };
+    const undoBtn = $('#undoBtn');
+    if(undoBtn) {
+      undoBtn.onclick = ()=>{
+        const last = state.history.pop();
+        if(!last) {
+          toast('Nothing to undo');
+          return;
+        }
+        if(last.type==='place'){
+          delete state.pins[last.term]; 
+          draw();
+          persist();
+          toast('Undone pin placement');
+        }
+        updateButtons();
+      };
+    }
 
     // ====== Flashcards ======
     function setupFlash(){
@@ -1238,11 +1431,16 @@
     }
 
     function updateFlash(){
-      $('#fcTerm').textContent = currentTarget() || '—';
+      const fcTerm = $('#fcTerm');
+      if(fcTerm) fcTerm.textContent = currentTarget() || '—';
+
       const pct = state.terms.length ? ((state.quizIndex)/state.terms.length)*100 : 0;
-      $('#fcBar').style.width = pct+'%';
+      const fcBar = $('#fcBar');
+      if(fcBar) fcBar.style.width = pct+'%';
+
       const progress = Math.min(state.quizIndex + 1, state.terms.length);
-      $('#fcProgress').textContent = `${progress} / ${state.terms.length}`;
+      const fcProgress = $('#fcProgress');
+      if(fcProgress) fcProgress.textContent = `${progress} / ${state.terms.length}`;
     }
 
     function flipFlash(){
@@ -1252,7 +1450,7 @@
         return;
       }
       const p = state.pins[term]; 
-      if(p){ 
+      if(p && canvas){ 
         const rect = canvas.getBoundingClientRect();
         revealPing(p.x * rect.width, p.y * rect.height); 
         toast(`Answer: ${term}`);
@@ -1261,17 +1459,22 @@
       }
     }
 
-    $('#fcNext').onclick = ()=>{ 
-      if(state.quizIndex < state.quizOrder.length - 1){ 
-        state.quizIndex++; 
-        updateFlash(); 
-      } else {
-        toast('End of flashcards');
-      }
-    };
+    const fcNext = $('#fcNext');
+    if(fcNext) {
+      fcNext.onclick = ()=>{ 
+        if(state.quizIndex < state.quizOrder.length - 1){ 
+          state.quizIndex++; 
+          updateFlash(); 
+        } else {
+          toast('End of flashcards');
+        }
+      };
+    }
 
-    $('#fcKnow').onclick = $('#fcNext').onclick;
-    $('#fcUnsure').onclick = $('#fcNext').onclick;
+    const fcKnow = $('#fcKnow');
+    const fcUnsure = $('#fcUnsure');
+    if(fcKnow && fcNext) fcKnow.onclick = fcNext.onclick;
+    if(fcUnsure && fcNext) fcUnsure.onclick = fcNext.onclick;
 
     // ====== Keyboard shortcuts ======
     window.addEventListener('keydown', e=>{
@@ -1290,16 +1493,18 @@
       }
       if(e.key==='r' || e.key==='R'){ 
         e.preventDefault();
-        $('#revealBtn').click();
+        const revealBtn = $('#revealBtn');
+        if(revealBtn) revealBtn.click();
       }
       if(e.key==='Escape'){
         e.preventDefault();
         // Close modal or reset selections
-        if($('#aiModal').classList.contains('show')) {
-          $('#aiModal').classList.remove('show');
+        const aiModal = $('#aiModal');
+        if(aiModal && safeHasClass(aiModal, 'show')) {
+          safeRemoveClass(aiModal, 'show');
         } else {
           state.selectedTerm = null;
-          $$('[data-sel]').forEach(btn => btn.classList.remove('good'));
+          $$('[data-sel]').forEach(btn => safeRemoveClass(btn, 'good'));
           draw();
         }
       }
@@ -1307,7 +1512,7 @@
 
     // ====== Effects ======
     function revealPing(x,y){
-      if(isNaN(x) || isNaN(y)) return;
+      if(!ctx || isNaN(x) || isNaN(y)) return;
 
       const originalDraw = draw;
       draw(); // Draw current state
@@ -1328,10 +1533,13 @@
     function confetti(x,y){
       if(isNaN(x) || isNaN(y)) return;
 
+      const stage = $('#stage');
+      if(!stage) return;
+
       const N = 20;
       const container = document.createElement('div'); 
       container.style.cssText = 'position:absolute; left:0; top:0; pointer-events:none; width:100%; height:100%; z-index:999;';
-      $('#stage').appendChild(container);
+      stage.appendChild(container);
 
       for(let i=0;i<N;i++){
         const p = document.createElement('div');
@@ -1353,88 +1561,104 @@
     }
 
     // ====== Export / Import / Reset ======
-    $('#exportBtn').onclick = ()=>{
-      try {
-        const data = {
-          terms: state.terms,
-          pins: state.pins,
-          tol: state.tol,
-          version: '1.0',
-          exportDate: new Date().toISOString()
-        };
-        const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); 
-        a.href=url; 
-        a.download='map-quiz-deck.json'; 
-        a.click(); 
-        URL.revokeObjectURL(url);
-        toast('Deck exported successfully');
-      } catch(e) {
-        toast('Export failed');
-        console.error('Export error:', e);
-      }
-    };
+    const exportBtn = $('#exportBtn');
+    if(exportBtn) {
+      exportBtn.onclick = ()=>{
+        try {
+          const data = {
+            terms: state.terms,
+            pins: state.pins,
+            tol: state.tol,
+            version: '1.0',
+            exportDate: new Date().toISOString()
+          };
+          const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); 
+          a.href=url; 
+          a.download='map-quiz-deck.json'; 
+          a.click(); 
+          URL.revokeObjectURL(url);
+          toast('Deck exported successfully');
+        } catch(e) {
+          toast('Export failed');
+          console.error('Export error:', e);
+        }
+      };
+    }
 
-    $('#importInput').addEventListener('change', e=>{
-      const file = e.target.files[0]; 
-      if(!file) return;
+    const importInput = $('#importInput');
+    if(importInput) {
+      importInput.addEventListener('change', e=>{
+        const file = e.target.files[0]; 
+        if(!file) return;
 
-      if(!file.type.includes('json')) {
-        toast('Please select a JSON file');
-        return;
-      }
+        if(!file.type.includes('json')) {
+          toast('Please select a JSON file');
+          return;
+        }
 
-      const fr = new FileReader(); 
-      fr.onload = ()=>{
-        try{ 
-          const data = JSON.parse(fr.result);
+        const fr = new FileReader(); 
+        fr.onload = ()=>{
+          try{ 
+            const data = JSON.parse(fr.result);
 
-          // Validate imported data
-          if(!Array.isArray(data.terms)) {
-            toast('Invalid deck format');
-            return;
+            // Validate imported data
+            if(!Array.isArray(data.terms)) {
+              toast('Invalid deck format');
+              return;
+            }
+
+            state.terms = data.terms.slice(0, 100) || []; // Limit terms
+            state.pins = data.pins || {}; 
+            state.tol = clamp(data.tol || 24, 10, 60);
+
+            const tolInput = $('#tol');
+            if(tolInput) tolInput.value = state.tol;
+
+            const tolVal = $('#tolVal');
+            if(tolVal) tolVal.textContent = state.tol;
+
+            renderTerms(); 
+            draw(); 
+            persist();
+            toast(`Imported ${state.terms.length} terms`);
+          } catch(err){ 
+            toast('Invalid JSON file'); 
+            console.error('Import error:', err);
           }
+        }; 
+        fr.onerror = () => toast('Failed to read file');
+        fr.readAsText(file);
+      });
+    }
 
-          state.terms = data.terms.slice(0, 100) || []; // Limit terms
-          state.pins = data.pins || {}; 
-          state.tol = clamp(data.tol || 24, 10, 60);
-          $('#tol').value = state.tol; 
-          $('#tolVal').textContent = state.tol;
+    const resetBtn = $('#resetBtn');
+    if(resetBtn) {
+      resetBtn.onclick = ()=>{
+        if(confirm('Clear all terms, pins, and image? This cannot be undone.')){
+          state.terms=[]; 
+          state.pins={}; 
+          state.image=null; 
+          imgEl.src=''; 
+          state.score=0; 
+          state.streak=0; 
+          state.history=[];
+          state.selectedTerm=null;
+          state.imageNatural = {w:0,h:0};
+
+          const imageError = $('#imageError');
+          if(imageError) imageError.style.display = 'none';
 
           renderTerms(); 
           draw(); 
+          updateButtons();
+          updateAiButtons();
           persist();
-          toast(`Imported ${state.terms.length} terms`);
-        } catch(err){ 
-          toast('Invalid JSON file'); 
-          console.error('Import error:', err);
+          toast('Everything cleared');
         }
-      }; 
-      fr.onerror = () => toast('Failed to read file');
-      fr.readAsText(file);
-    });
-
-    $('#resetBtn').onclick = ()=>{
-      if(confirm('Clear all terms, pins, and image? This cannot be undone.')){
-        state.terms=[]; 
-        state.pins={}; 
-        state.image=null; 
-        imgEl.src=''; 
-        state.score=0; 
-        state.streak=0; 
-        state.history=[];
-        state.selectedTerm=null;
-        state.imageNatural = {w:0,h:0};
-        $('#imageError').style.display = 'none';
-        renderTerms(); 
-        draw(); 
-        updateButtons();
-        updateAiButtons();
-        persist();
-        toast('Everything cleared');
-      }
-    };
+      };
+    }
 
     // ====== Persistence ======
     function persist(){
@@ -1466,8 +1690,11 @@
           imgEl.src = image;
         }
 
-        $('#tol').value = state.tol; 
-        $('#tolVal').textContent = state.tol;
+        const tolInput = $('#tol');
+        if(tolInput) tolInput.value = state.tol;
+
+        const tolVal = $('#tolVal');
+        if(tolVal) tolVal.textContent = state.tol;
       } catch(e) { 
         console.warn('Failed to load from localStorage:', e);
         // Continue with default state
