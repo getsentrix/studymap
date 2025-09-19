@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Map Quiz Studio – REAL AI Vision Enhanced</title>
+  <title>Map Quiz Studio – OCR.space AI Vision Enhanced</title>
   <style>
     :root{
       --bg:#0b1020; --panel:#121835; --muted:#1a2250; --text:#e7ecff; --accent:#7aa2ff; --good:#34d399; --bad:#ef4444; --warn:#f59e0b;
@@ -37,7 +37,7 @@
     .btn.warn{background:linear-gradient(180deg, #b47a23, #8a5e1b)}
     .btn.ghost{background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12)}
     .btn.ai{background:linear-gradient(135deg, #6366f1, #8b5cf6); position:relative; overflow:hidden;}
-    .btn.ai::before{content:'🧠'; position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:14px;}
+    .btn.ai::before{content:'🔍'; position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:14px;}
     .btn.ai{padding-left:28px;}
 
     input[type="file"]{display:none}
@@ -127,16 +127,14 @@
       .flashcard{position:fixed; left:12px; right:12px; top:12px; width:auto;}
       .modal-content{margin:10px; padding:16px;}
     }
-
-    .tooltip{position:absolute; transform:translate(-50%, -120%); background:#0f1736; border:1px solid rgba(255,255,255,.15); padding:6px 8px; border-radius:8px; font-size:12px; white-space:nowrap; z-index:1001;}
   </style>
 </head>
 <body>
   <div class="app">
     <header class="panel">
-      <h1><span class="dot"></span> Map Quiz Studio <span class="small" style="opacity:.65">– REAL AI Vision Enhanced</span></h1>
+      <h1><span class="dot"></span> Map Quiz Studio <span class="small" style="opacity:.65">– OCR.space AI Enhanced</span></h1>
       <div style="display:flex; gap:8px; align-items:center">
-        <button class="btn ai" id="aiMapperBtn" title="REAL AI Vision text detection">Real AI Vision</button>
+        <button class="btn ai" id="aiMapperBtn" title="OCR.space free text detection">AI Text Scanner</button>
         <button class="btn ghost" id="exportBtn" title="Export deck JSON">Export</button>
         <input id="importInput" type="file" accept="application/json" />
         <label for="importInput" class="btn ghost">Import</label>
@@ -153,7 +151,7 @@
           <button class="btn secondary" id="fitBtn">Fit to screen</button>
           <button class="btn secondary" id="clearImgBtn">Remove image</button>
         </div>
-        <div style="margin-top:8px" class="small hint">Upload your map image. Use REAL AI Vision to automatically detect all text labels with precise coordinates!</div>
+        <div style="margin-top:8px" class="small hint">Upload your map image. Use AI Text Scanner to automatically detect all labels with coordinates!</div>
         <div id="imageError" class="error" style="display:none; margin-top:8px;"></div>
       </div>
 
@@ -197,7 +195,7 @@
             <button class="btn secondary" id="undoBtn">Undo last pin</button>
           </div>
         </div>
-        <div class="small hint" style="margin-top:8px">Author mode: select a term, then click map to place its pin. Drag to move (desktop). Use AI Vision for automatic placement!</div>
+        <div class="small hint" style="margin-top:8px">Author mode: select a term, then click map to place its pin. Use AI Scanner for automatic placement!</div>
       </div>
     </aside>
 
@@ -240,26 +238,26 @@
     </main>
   </div>
 
-  <!-- REAL AI Vision Modal -->
+  <!-- OCR.space AI Modal -->
   <div class="modal" id="aiModal">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">🧠 Real AI Vision Text Detection</div>
+        <div class="modal-title">🔍 OCR.space AI Text Detection</div>
         <button class="close-btn" id="closeAiModal">&times;</button>
       </div>
 
       <div class="step">
-        <div class="step-title">Step 0: API Configuration</div>
-        <div class="step-desc">Enter your Google Vision API key to enable real AI text detection.</div>
+        <div class="step-title">Step 0: Get Free OCR.space API Key</div>
+        <div class="step-desc">Sign up for a free OCR.space API key (no credit card required, 500 scans/day).</div>
         <div style="margin-bottom:12px;">
-          <label class="small">Google Vision API Key:</label>
-          <input type="password" id="apiKey" class="api-input" placeholder="Enter your Google Vision API key..." />
+          <label class="small">OCR.space API Key:</label>
+          <input type="password" id="apiKey" class="api-input" placeholder="Enter your free OCR.space API key..." />
           <div id="apiStatus" class="api-status" style="display:none;"></div>
         </div>
         <div class="small hint">
-          Get your free API key: 
-          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent)">Google Cloud Console</a>
-          • Free tier: 1000 requests/month
+          Get your FREE API key: 
+          <a href="https://ocr.space/ocrapi" target="_blank" style="color:var(--accent)">OCR.space Free API</a>
+          • No credit card needed • 500 scans/day • Up to 1MB per image
         </div>
       </div>
 
@@ -277,24 +275,39 @@
       </div>
 
       <div class="step">
-        <div class="step-title">Step 2: Detection Settings</div>
-        <div class="step-desc">Configure AI text detection parameters for optimal results.</div>
+        <div class="step-title">Step 2: OCR Detection Settings</div>
+        <div class="step-desc">Configure text detection parameters for optimal results.</div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin:12px 0;">
           <div>
-            <label class="small">Min Confidence: <span id="confidenceVal">70%</span></label>
-            <input type="range" id="minConfidence" min="0.5" max="1.0" step="0.05" value="0.7" style="width:100%;" />
+            <label class="small">OCR Engine: <span id="engineVal">Engine 2</span></label>
+            <select id="ocrEngine" style="width:100%; padding:4px; border-radius:4px; background:var(--muted); color:var(--text); border:1px solid rgba(255,255,255,.2);">
+              <option value="1">Engine 1 (Tesseract)</option>
+              <option value="2" selected>Engine 2 (Best)</option>
+              <option value="3">Engine 3 (Asian)</option>
+            </select>
           </div>
           <div>
-            <label class="small">Min Text Size: <span id="textSizeVal">12px</span></label>
-            <input type="range" id="minTextSize" min="8" max="50" value="12" style="width:100%;" />
+            <label class="small">Language: <span id="langVal">English</span></label>
+            <select id="ocrLanguage" style="width:100%; padding:4px; border-radius:4px; background:var(--muted); color:var(--text); border:1px solid rgba(255,255,255,.2);">
+              <option value="eng" selected>English</option>
+              <option value="ara">Arabic</option>
+              <option value="fra">French</option>
+              <option value="spa">Spanish</option>
+              <option value="deu">German</option>
+            </select>
           </div>
+        </div>
+        <div style="margin:8px 0;">
+          <label class="small">
+            <input type="checkbox" id="overlayRequired" checked /> Include text coordinates
+          </label>
         </div>
       </div>
 
       <div class="step">
         <div class="step-title">Step 3: AI Processing</div>
-        <div class="step-desc">Real AI will analyze your image and detect all text labels with precise pixel coordinates.</div>
-        <button class="btn ai" id="startRealAiProcessing" disabled>🚀 Analyze with Google Vision AI</button>
+        <div class="step-desc">OCR.space will analyze your image and detect all text labels with precise coordinates.</div>
+        <button class="btn ai" id="startRealAiProcessing" disabled>🚀 Scan Image with OCR.space</button>
         <div class="ai-status" id="aiStatus" style="display:none;">
           <div class="ai-loading"></div>
           <span id="aiStatusText">Processing...</span>
@@ -302,7 +315,7 @@
       </div>
 
       <div class="step" id="resultsStep" style="display:none;">
-        <div class="step-title">Step 4: AI Detection Results</div>
+        <div class="step-title">Step 4: OCR Detection Results</div>
         <div class="step-desc">Review all detected text labels and their precise coordinates.</div>
         <div class="results-preview" id="resultsPreview"></div>
         <div style="display:flex; gap:8px; margin-top:12px;">
@@ -521,7 +534,7 @@
     const apiKeyInput = $('#apiKey');
     if(apiKeyInput) {
       // Load saved API key
-      const savedKey = localStorage.getItem('google_vision_api_key');
+      const savedKey = localStorage.getItem('ocr_space_api_key');
       if(savedKey) {
         state.apiKey = savedKey;
         apiKeyInput.value = savedKey;
@@ -530,7 +543,7 @@
 
       apiKeyInput.addEventListener('input', (e) => {
         state.apiKey = e.target.value.trim();
-        localStorage.setItem('google_vision_api_key', state.apiKey);
+        localStorage.setItem('ocr_space_api_key', state.apiKey);
         updateApiStatus();
         updateAiButtons();
       });
@@ -546,12 +559,12 @@
       }
 
       status.style.display = 'block';
-      if(state.apiKey.length < 20) {
+      if(state.apiKey.length < 10) {
         status.className = 'api-status error';
         status.textContent = '⚠️ API key seems too short';
       } else {
         status.className = 'api-status ok';
-        status.textContent = '✅ API key configured';
+        status.textContent = '✅ OCR.space API key configured';
       }
     }
 
@@ -616,6 +629,11 @@
           return;
         }
 
+        if (file.size > 1024 * 1024) { // 1MB limit for OCR.space free
+          toast('Image too large for free OCR.space API. Please use image under 1MB.');
+          return;
+        }
+
         const fr = new FileReader();
         fr.onload = () => {
           aiImage = fr.result;
@@ -651,29 +669,12 @@
       };
     }
 
-    // Confidence and text size sliders
-    const minConfidence = $('#minConfidence');
-    const confidenceVal = $('#confidenceVal');
-    if(minConfidence && confidenceVal) {
-      minConfidence.addEventListener('input', (e) => {
-        confidenceVal.textContent = Math.round(e.target.value * 100) + '%';
-      });
-    }
-
-    const minTextSize = $('#minTextSize');
-    const textSizeVal = $('#textSizeVal');
-    if(minTextSize && textSizeVal) {
-      minTextSize.addEventListener('input', (e) => {
-        textSizeVal.textContent = e.target.value + 'px';
-      });
-    }
-
-    // ====== REAL AI PROCESSING ======
+    // ====== OCR.SPACE PROCESSING ======
     const startRealAiProcessing = $('#startRealAiProcessing');
     if(startRealAiProcessing) {
       startRealAiProcessing.onclick = async () => {
         if(!state.apiKey) {
-          toast('Please enter your Google Vision API key');
+          toast('Please enter your OCR.space API key');
           return;
         }
 
@@ -687,24 +688,20 @@
           const aiStatusText = $('#aiStatusText');
 
           if(aiStatus) aiStatus.style.display = 'block';
-          if(aiStatusText) aiStatusText.textContent = 'Preparing image for AI analysis...';
+          if(aiStatusText) aiStatusText.textContent = 'Uploading image to OCR.space...';
 
-          // Convert image for API
-          const imageForApi = aiImage || state.image;
+          // Get settings
+          const engine = $('#ocrEngine')?.value || '2';
+          const language = $('#ocrLanguage')?.value || 'eng';
+          const isOverlay = $('#overlayRequired')?.checked || true;
 
-          if(aiStatusText) aiStatusText.textContent = 'Sending to Google Vision API...';
+          // Call OCR.space API
+          const detectionResults = await callOCRSpaceAPI(aiImage, state.apiKey, engine, language, isOverlay);
 
-          // Call REAL Google Vision API
-          const detectionResults = await callGoogleVisionAPI(imageForApi, state.apiKey);
-
-          if(aiStatusText) aiStatusText.textContent = 'Processing AI detection results...';
-
-          // Get slider values
-          const confidence = parseFloat(minConfidence?.value || 0.7);
-          const textSize = parseInt(minTextSize?.value || 12);
+          if(aiStatusText) aiStatusText.textContent = 'Processing OCR results...';
 
           // Process results
-          const processedResults = processVisionResults(detectionResults, confidence, textSize);
+          const processedResults = processOCRResults(detectionResults);
 
           state.aiResults = processedResults;
           displayAiResults(processedResults);
@@ -713,78 +710,70 @@
           const resultsStep = $('#resultsStep');
           if(resultsStep) resultsStep.style.display = 'block';
 
-          toast(`🧠 AI detected ${processedResults.terms.length} text labels with precise coordinates!`);
+          toast(`🔍 OCR.space detected ${processedResults.terms.length} text labels!`);
 
         } catch(error) {
-          console.error('AI processing error:', error);
+          console.error('OCR processing error:', error);
           const aiStatus = $('#aiStatus');
           if(aiStatus) aiStatus.style.display = 'none';
 
-          if(error.message.includes('API_KEY') || error.message.includes('invalid')) {
-            toast('❌ Invalid API key. Please check your Google Vision API key.');
+          if(error.message.includes('Invalid API Key')) {
+            toast('❌ Invalid API key. Please check your OCR.space API key.');
           } else if(error.message.includes('quota') || error.message.includes('limit')) {
-            toast('❌ API quota exceeded. Try again later or upgrade your plan.');
-          } else if(error.message.includes('billing')) {
-            toast('❌ Billing not enabled. Enable billing in Google Cloud Console.');
+            toast('❌ Daily quota exceeded. Try again tomorrow or upgrade your OCR.space plan.');
           } else {
-            toast('❌ AI processing failed: ' + error.message);
+            toast('❌ OCR processing failed: ' + error.message);
           }
         }
       };
     }
 
-    // ====== GOOGLE VISION API INTEGRATION ======
-    async function callGoogleVisionAPI(imageBase64, apiKey) {
-      const API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+    // ====== OCR.SPACE API INTEGRATION ======
+    async function callOCRSpaceAPI(imageBase64, apiKey, engine = '2', language = 'eng', isOverlayRequired = true) {
+      const API_URL = 'https://api.ocr.space/parse/image';
 
       // Clean base64 data
-      const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+      const cleanBase64 = imageBase64.replace(/^data:image\/[^;]+;base64,/, '');
 
-      const requestBody = {
-        requests: [{
-          image: {
-            content: cleanBase64
-          },
-          features: [{
-            type: 'TEXT_DETECTION',
-            maxResults: 100
-          }]
-        }]
-      };
+      const formData = new FormData();
+      formData.append('base64Image', `data:image/png;base64,${cleanBase64}`);
+      formData.append('apikey', apiKey);
+      formData.append('OCREngine', engine);
+      formData.append('language', language);
+      formData.append('isOverlayRequired', isOverlayRequired ? 'true' : 'false');
+      formData.append('detectOrientation', 'false');
+      formData.append('scale', 'true');
+      formData.append('isTable', 'false');
 
       const response = await fetch(API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
+        body: formData
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`API Error (${response.status}): ${errorData.error?.message || 'Network error'}`);
+        throw new Error(`OCR.space API Error: ${response.status}`);
       }
 
       const data = await response.json();
 
-      if (data.responses?.[0]?.error) {
-        throw new Error(`Vision API Error: ${data.responses[0].error.message}`);
+      if (data.IsErroredOnProcessing) {
+        throw new Error(`OCR Error: ${data.ErrorMessage || 'Unknown error'}`);
       }
 
-      return data.responses?.[0]?.textAnnotations || [];
+      return data;
     }
 
-    function processVisionResults(textAnnotations, minConfidence, minTextSize) {
+    function processOCRResults(ocrResponse) {
       const results = {
         terms: [],
         pins: {},
         metadata: {
           processed_at: new Date().toISOString(),
-          total_detections: textAnnotations.length,
+          total_detections: 0,
           filtered_detections: 0,
-          api_used: 'Google Vision API',
-          confidence_threshold: minConfidence,
-          min_text_size: minTextSize,
+          api_used: 'OCR.space',
+          engine_used: $('#ocrEngine')?.value || '2',
+          language: $('#ocrLanguage')?.value || 'eng',
           image_dimensions: {
             width: state.imageNatural.w,
             height: state.imageNatural.h
@@ -792,63 +781,59 @@
         }
       };
 
-      // Skip the first annotation (it's usually the full document text)
-      const individualTexts = textAnnotations.slice(1);
+      if (!ocrResponse.ParsedResults || ocrResponse.ParsedResults.length === 0) {
+        return results;
+      }
 
-      for(const annotation of individualTexts) {
-        const text = annotation.description?.trim();
-        if(!text || text.length < 2) continue;
+      const parsedResult = ocrResponse.ParsedResults[0];
+      if (!parsedResult.TextOverlay || !parsedResult.TextOverlay.Lines) {
+        return results;
+      }
 
-        // Get bounding box
-        const vertices = annotation.boundingPoly?.vertices;
-        if(!vertices || vertices.length < 4) continue;
+      // Process each detected text line
+      for (const line of parsedResult.TextOverlay.Lines) {
+        if (!line.Words) continue;
 
-        // Calculate bounds and center
-        const bounds = calculateTextBounds(vertices);
-        if(bounds.width < minTextSize || bounds.height < minTextSize) continue;
+        for (const word of line.Words) {
+          const text = word.WordText?.trim();
+          if (!text || text.length < 2) continue;
 
-        // Convert to normalized coordinates (0-1)
-        const normalizedX = bounds.centerX / state.imageNatural.w;
-        const normalizedY = bounds.centerY / state.imageNatural.h;
+          results.metadata.total_detections++;
 
-        // Clean up text for geographic labels
-        const cleanText = cleanTextLabel(text);
-        if(!cleanText) continue;
+          // Clean text for geographic labels
+          const cleanText = cleanTextLabel(text);
+          if (!cleanText) continue;
 
-        // Check for duplicate terms (keep the one with better position)
-        if(results.terms.includes(cleanText)) continue;
+          // Calculate center from bounding box
+          const left = parseInt(word.Left) || 0;
+          const top = parseInt(word.Top) || 0;
+          const width = parseInt(word.Width) || 0;
+          const height = parseInt(word.Height) || 0;
 
-        results.terms.push(cleanText);
-        results.pins[cleanText] = {
-          x: Math.max(0.02, Math.min(0.98, normalizedX)),
-          y: Math.max(0.02, Math.min(0.98, normalizedY)),
-          confidence: 0.8, // Google Vision doesn't always provide confidence for text detection
-          originalText: text,
-          bounds: bounds
-        };
+          const centerX = left + (width / 2);
+          const centerY = top + (height / 2);
 
-        results.metadata.filtered_detections++;
+          // Convert to normalized coordinates (0-1)
+          const normalizedX = centerX / state.imageNatural.w;
+          const normalizedY = centerY / state.imageNatural.h;
+
+          // Skip duplicates
+          if (results.terms.includes(cleanText)) continue;
+
+          results.terms.push(cleanText);
+          results.pins[cleanText] = {
+            x: Math.max(0.02, Math.min(0.98, normalizedX)),
+            y: Math.max(0.02, Math.min(0.98, normalizedY)),
+            confidence: 0.9, // OCR.space doesn't provide word-level confidence
+            originalText: text,
+            bounds: { left, top, width, height }
+          };
+
+          results.metadata.filtered_detections++;
+        }
       }
 
       return results;
-    }
-
-    function calculateTextBounds(vertices) {
-      const xs = vertices.map(v => v.x || 0);
-      const ys = vertices.map(v => v.y || 0);
-
-      const minX = Math.min(...xs);
-      const maxX = Math.max(...xs);
-      const minY = Math.min(...ys);
-      const maxY = Math.max(...ys);
-
-      return {
-        minX, maxX, minY, maxY,
-        width: maxX - minX,
-        height: maxY - minY,
-        centerX: (minX + maxX) / 2,
-        centerY: (minY + maxY) / 2
-      };
     }
 
     function cleanTextLabel(text) {
@@ -859,12 +844,12 @@
       if(clean.length < 2 || clean.length > 50) return null;
 
       // Skip common non-geographic terms and numbers
-      const skipWords = ['THE', 'OF', 'AND', 'OR', 'TO', 'IN', 'FOR', 'WITH', 'ON', 'AT', 'BY', 'FROM', 'UP', 'ABOUT', 'INTO', 'OVER', 'AFTER', 'SCALE', 'KM', 'MILES', 'COPYRIGHT'];
+      const skipWords = ['THE', 'OF', 'AND', 'OR', 'TO', 'IN', 'FOR', 'WITH', 'ON', 'AT', 'BY', 'FROM', 'UP', 'ABOUT', 'INTO', 'OVER', 'AFTER', 'SCALE', 'KM', 'MILES', 'COPYRIGHT', 'MAP', 'LEGEND'];
       const upperClean = clean.toUpperCase();
       if(skipWords.some(word => upperClean === word)) return null;
 
-      // Skip if it's just numbers
-      if(/^[0-9\s.-]+$/.test(clean)) return null;
+      // Skip if it's just numbers or coordinates
+      if(/^[0-9\s.°'-]+$/.test(clean)) return null;
 
       // Capitalize properly for geographic names
       return clean.split(' ').map(word => 
@@ -877,14 +862,14 @@
       const preview = $('#resultsPreview');
       if(!preview) return;
 
-      let displayText = `🧠 REAL AI Vision Detection Results\n`;
+      let displayText = `🔍 OCR.space Text Detection Results\n`;
       displayText += `${'='.repeat(50)}\n`;
       displayText += `API Used: ${results.metadata.api_used}\n`;
+      displayText += `Engine: ${results.metadata.engine_used}\n`;
+      displayText += `Language: ${results.metadata.language}\n`;
       displayText += `Processed: ${new Date(results.metadata.processed_at).toLocaleString()}\n`;
-      displayText += `Total Detections: ${results.metadata.total_detections}\n`;
-      displayText += `Filtered Results: ${results.metadata.filtered_detections}\n`;
-      displayText += `Confidence Threshold: ${(results.metadata.confidence_threshold * 100).toFixed(0)}%\n`;
-      displayText += `Min Text Size: ${results.metadata.min_text_size}px\n\n`;
+      displayText += `Total Text Found: ${results.metadata.total_detections}\n`;
+      displayText += `Geographic Labels: ${results.metadata.filtered_detections}\n\n`;
 
       displayText += `📍 Detected Geographic Labels:\n`;
       displayText += `${'='.repeat(40)}\n`;
@@ -902,7 +887,7 @@
 
       if(results.terms.length === 0) {
         displayText += `\n⚠️ No geographic labels detected.\n`;
-        displayText += `Try adjusting detection settings or use a clearer map image.\n`;
+        displayText += `Try using a clearer image or different OCR engine.\n`;
       }
 
       preview.textContent = displayText;
@@ -934,7 +919,7 @@
         const aiModal = $('#aiModal');
         if(aiModal) safeRemoveClass(aiModal, 'show');
 
-        toast(`🎉 AI Vision complete! Imported ${imported} new labels and ${Object.keys(state.aiResults.pins).length} precise coordinates`);
+        toast(`🎉 OCR.space complete! Imported ${imported} new labels and ${Object.keys(state.aiResults.pins).length} coordinates`);
       };
     }
 
@@ -946,7 +931,7 @@
         const data = {
           ...state.aiResults,
           version: '2.0',
-          source: 'Google Vision API - Real AI Text Detection',
+          source: 'OCR.space Free API - Text Detection',
           tol: state.tol
         };
 
@@ -954,11 +939,11 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'real-ai-vision-map-quiz.json';
+        a.download = 'ocr-space-map-quiz.json';
         a.click();
         URL.revokeObjectURL(url);
 
-        toast('🧠 Real AI results downloaded as JSON');
+        toast('🔍 OCR.space results downloaded as JSON');
       };
     }
 
@@ -1302,7 +1287,7 @@
           ctx.fillStyle = 'rgba(255,255,255,.08)';
           ctx.textAlign='center'; 
           ctx.font='600 16px system-ui';
-          const message = state.isLoading ? 'Loading image...' : 'Upload a map image and use REAL AI Vision';
+          const message = state.isLoading ? 'Loading image...' : 'Upload a map image and use AI Text Scanner';
           ctx.fillText(message, w/2, h/2);
         }
 
@@ -1452,7 +1437,7 @@
 
       const termsWithPins = state.terms.filter(term => state.pins[term]);
       if(termsWithPins.length === 0) {
-        toast('Place some pins first in Author mode or use Real AI Vision');
+        toast('Place some pins first in Author mode or use AI Text Scanner');
         return;
       }
 
@@ -1604,7 +1589,7 @@
     // ====== Keyboard shortcuts ======
     window.addEventListener('keydown', e=>{
       // Prevent conflicts with text inputs
-      if(e.target.tagName === 'INPUT') return;
+      if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
 
       if(e.code==='Space'){ 
         e.preventDefault(); 
@@ -1696,7 +1681,7 @@
             tol: state.tol,
             version: '2.0',
             exportDate: new Date().toISOString(),
-            source: 'Map Quiz Studio with Real AI Vision'
+            source: 'Map Quiz Studio with OCR.space AI'
           };
           const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
           const url = URL.createObjectURL(blob);
@@ -1855,7 +1840,7 @@
         // Initial draw
         setTimeout(() => {
           draw();
-          toast('🧠 Map Quiz Studio loaded with REAL AI Vision!');
+          toast('🔍 Map Quiz Studio loaded with OCR.space AI!');
         }, 100);
       } catch(e) {
         console.error('Initialization error:', e);
