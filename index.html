@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=1024, initial-scale=1.0">
+  <meta name="viewport" content="width=1200, initial-scale=1.0">
   <title>Map Quiz Studio</title>
   <style>
     :root {
@@ -17,53 +17,43 @@
       --shadow: 0 10px 30px rgba(0,0,0,.35);
       --radius: 18px;
     }
-    html,body { height:100%; }
+    html,body { height:100%; width:100%; margin:0; padding:0; box-sizing: border-box;}
     body {
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      width: 100vw;
       background: radial-gradient(1200px 800px at 20% -10%, #1a224a 0, rgba(26,34,74,0) 60%, var(--bg));
       color: var(--text);
       font: 500 15px/1.5 'system-ui', Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      box-sizing: border-box;
+      height: 100vh;
+      width: 100vw;
+      overflow:hidden;
     }
     .app {
       display: grid;
       grid-template-columns: 340px 1fr;
-      grid-template-rows: 1fr;
-      gap: 16px;
-      height: 98vh;
-      max-width: 99vw;
-      align-items: stretch;
+      height: 100vh;
+      width: 100vw;
       box-sizing: border-box;
-      padding: 12px;
     }
     .panel {
       background: var(--panel);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 16px 16px 8px 16px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
       gap: 14px;
-      min-width: 280px;
-      max-width: 350px;
-      min-height: 0;
-      max-height: 98vh;
+      max-height: 100vh;
+      min-width: 310px;
+      max-width:340px;
       overflow-y: auto;
       box-sizing: border-box;
     }
     .canvas-panel {
+      background: var(--bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      min-width: 0;
-      min-height: 0;
-      width: 100%;
-      height: 100%;
+      height: 100vh;
       overflow: hidden;
-      background: var(--bg);
     }
     .btn, button, input[type="file"] {
       background: var(--muted);
@@ -86,20 +76,16 @@
     input[type="range"] { vertical-align: middle; }
     #termsList { max-height: 120px; overflow-y: auto; }
     #mapCanvas {
-      max-width: 100%;
-      max-height: 91vh;
+      max-width: 98vw;
+      max-height: 97vh;
       width: 96%;
-      height: 91vh;
-      border-radius: 22px;
-      outline: 2px solid #282c40;
-      background: #101428;
-      box-shadow: 0 2px 48px #05082066;
-      display: block;
-    }
-    @media (max-width: 980px) {
-      .app { grid-template-columns: 1fr; }
-      .canvas-panel { min-width: 0; }
-      .panel { max-width: 99vw; }
+      height: 95vh;
+      border-radius:22px;
+      outline:2px solid #282c40;
+      margin:auto;
+      background:#101428;
+      box-shadow:0 2px 48px #05082066;
+      display:block;
     }
   </style>
 </head>
@@ -161,12 +147,12 @@
       <div class="row"><span>Target: <b id="targetTerm">—</b></span></div>
       <div class="row"><button id="next" style="flex:1;">Next <span class="shortcut">N, Space</span></button></div>
     </div>
-    <div class="panel canvas-panel">
+    <div class="canvas-panel">
       <canvas id="mapCanvas" tabindex="0"></canvas>
     </div>
   </div>
   <script>
-    // === DATA PERSISTENCE/STATE ===
+    // === STATE
     let state = { img: null, pins: [], terms: [], mode: 'Author', tolerance: 24, quizOrder: [], quizIdx: 0, score: 0, streak: 0, pinsEnabled: true };
     const saveState = () => localStorage.setItem('studiemap', JSON.stringify(state));
     const loadState = () => {
@@ -174,30 +160,23 @@
     };
     const clearState = () => { localStorage.removeItem('studiemap'); location.reload(); };
     const el = id => document.getElementById(id);
-    // === CANVAS LOGIC ===
+
+    // === CANVAS
     let canvas = el('mapCanvas'), ctx = canvas.getContext('2d'), img = new window.Image();
     function fitCanvas() {
-      let maxW = Math.min(window.innerWidth - 410, 1300), maxH = Math.min(window.innerHeight - 44, 880);
-      let w = Math.max(520, maxW), h = Math.max(490, maxH);
-      canvas.width = w;
-      canvas.height = h;
+      let calcW = window.innerWidth - 380;
+      let calcH = window.innerHeight - 50;
+      canvas.width = Math.max(600, calcW > 1100 ? 1100 : calcW);
+      canvas.height = Math.max(400, calcH > 800 ? 800 : calcH);
       drawCanvas();
     }
     window.onresize = fitCanvas;
     function drawCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (state.img) {
-        img.src = state.img;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      } else {
-        ctx.fillStyle = '#232a4a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#556';
-        ctx.font = '28px sans-serif';
-        ctx.fillText('No image', canvas.width/2-54, canvas.height/2);
-      }
-      if (state.pinsEnabled && state.pins.length)
-        for (let p of state.pins) drawPin(p.x, p.y, p.termIdx, false);
+      if (state.img) { img.src = state.img; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); }
+      else { ctx.fillStyle = '#232a4a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#556'; ctx.font = '28px sans-serif'; ctx.fillText('No image', canvas.width/2-54, canvas.height/2);}
+      if (state.pinsEnabled && state.pins.length) state.pins.forEach(p=>drawPin(p.x,p.y,p.termIdx,false));
     }
     function drawPin(x, y, idx, ghost) {
       ctx.save();
@@ -206,8 +185,7 @@
       ctx.arc(x, y, 13, 0, 2*Math.PI); ctx.fillStyle = ghost ? '#e7ecff77' : '#7aa2ff'; ctx.fill();
       ctx.lineWidth = 3; ctx.strokeStyle = '#101428'; ctx.stroke();
       ctx.font = '14px bold sans-serif'; ctx.fillStyle = '#18182b'; ctx.textAlign = 'center';
-      ctx.fillText(state.terms[idx]?.substr(0,2).toUpperCase()||'', x, y + 4);
-      ctx.restore();
+      ctx.fillText(state.terms[idx]?.substr(0,2).toUpperCase()||'', x, y + 4); ctx.restore();
     }
     function setMode(m) { state.mode = m; el('modeStatus').textContent = m; saveState(); drawCanvas(); updateUI(); }
     ['modeAuthor','modeQuiz','modeFlash'].forEach((id,i) => el(id).onclick = () => setMode(['Author','Quiz','Flashcards'][i]));
