@@ -7,144 +7,191 @@
   <style>
     :root {
       --bg: #0b1020;
-      --panel: #121835;
-      --muted: #1a2250;
-      --text: #e7ecff;
-      --accent: #7aa2ff;
+      --panel: rgba(24,26,35,0.93);
+      --blur: blur(14px);
+      --muted: #232943;
+      --text: #f6f7fa;
+      --text-dim: #a5adc9;
+      --accent: #5a92ff;
       --good: #34d399;
-      --bad: #ef4444;
-      --warn: #f59e0b;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --radius: 18px;
+      --bad: #f15f5c;
+      --shadow: 0 10px 30px rgba(0,0,0,.18);
+      --radius: 27px;
     }
-    html,body { height:100%; width:100%; margin:0; padding:0; box-sizing: border-box;}
+    html,body { height:100%; width:100%; margin:0; padding:0; }
     body {
-      background: radial-gradient(1200px 800px at 20% -10%, #1a224a 0, rgba(26,34,74,0) 60%, var(--bg));
+      background: linear-gradient(125deg, #29325a 0%, #152040 100%);
       color: var(--text);
-      font: 500 15px/1.5 'system-ui', Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      height: 100vh;
-      width: 100vw;
-      overflow:hidden;
+      font: 500 16px/1.65 'Segoe UI', 'system-ui', Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      min-width:1120px;
     }
     .app {
       display: grid;
-      grid-template-columns: 340px 1fr;
+      grid-template-columns: 372px 1fr;
       height: 100vh;
       width: 100vw;
-      box-sizing: border-box;
+      max-width:100vw;
     }
     .panel {
       background: var(--panel);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 18px;
+      padding: 2.2rem 2rem 1.5rem 2rem;
+      margin: 0 0 0 .7rem;
+      min-width: 307px;
+      max-width:380px;
+      backdrop-filter: var(--blur);
+      border: 1.5px solid #2454a511;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      max-height: 100vh;
-      min-width: 310px;
-      max-width:340px;
+      gap: 27px;
       overflow-y: auto;
-      box-sizing: border-box;
+      min-height: 0;
+      max-height: 97vh;
     }
     .canvas-panel {
-      background: var(--bg);
+      background: linear-gradient(85deg,#243258,#172847 88%);
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
-      overflow: hidden;
+      padding: 0 1vw 0 0;
     }
     .btn, button, input[type="file"] {
       background: var(--muted);
       color: var(--text);
       border: none;
-      border-radius: 9px;
+      border-radius: 11px;
       font: inherit;
-      padding: 7px 13px;
-      margin: 2px 0 2px 0;
+      padding: 9px 20px;
+      font-size: 15px;
+      margin: 2px 0;
       cursor: pointer;
-      transition: background .15s;
-      box-shadow: 0 1px 4px #12183521;
+      transition: background .16s, box-shadow .13s;
+      box-shadow: 0 1px 5px #13193322;
+      letter-spacing:.02em;
     }
-    .btn:focus-visible { outline: 2px solid var(--accent); }
-    .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
-    .shortcut { font-size: 12px; color: var(--accent); margin-left: 7px; }
-    label { margin-right: 10px; }
-    .row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
-    h1 { font-size: 20px; margin: 0 0 8px 0; }
-    input[type="range"] { vertical-align: middle; }
-    #termsList { max-height: 120px; overflow-y: auto; }
+    .btn:focus-visible, button:focus-visible { outline: 2px solid var(--accent); }
+    .btn[disabled], button[disabled] { opacity: 0.5; cursor: not-allowed; }
+    button:not([disabled]):hover, .btn:not([disabled]):hover { background: #363e65; color: #ffd874;}
+    hr { opacity:.23; border:none; border-bottom:1.6px solid #366; margin:14px -8px 10px -8px;}
+    .heading {margin-top:.5rem;margin-bottom:.13rem;font-weight:700;font-size:18.9px;letter-spacing:.03em;}
+    .group {margin-bottom:21px;}
+    label { margin-right: 8px; color: var(--text-dim);}
+    .row { display: flex; align-items: center; gap: 9px; margin-bottom: 5px;}
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing:.03em; margin-top:.4em;margin-bottom:.4em;}
+    input[type="range"] { vertical-align: middle; accent-color: var(--accent);}
+    #termsList { max-height: 155px; overflow-y: auto; margin:.2em 0;}
+    #termsList .row {
+      padding: 2px 0 2px 3px;
+      margin-bottom: 0;
+      border-radius: 6px;
+      transition: background .13s;
+    }
+    #termsList .row:hover { background: #2c3759;}
+    #addTerm {width:70%; margin-right:.65em;padding:7px 10px;border-radius:8px;background:#181d2a;color:var(--text);}
+    #addTerm:focus {outline:1.5px solid var(--accent);}
     #mapCanvas {
-      max-width: 98vw;
-      max-height: 97vh;
-      width: 96%;
-      height: 95vh;
-      border-radius:22px;
-      outline:2px solid #282c40;
-      margin:auto;
+      max-width: 95vw;
+      max-height: 91vh;
+      width: 99.5%;
+      height: 93vh;
+      border-radius:25px;
+      outline:2.5px solid #132539;
       background:#101428;
-      box-shadow:0 2px 48px #05082066;
-      display:block;
+      box-shadow:0 7px 55px #040d2f66;
+      display: block;
+      margin:auto;
+      transition: outline .16s;
     }
+    .quiz-num-main {color:var(--accent);font-weight:600;}
+    .shortcut {
+      font-size: 13px;
+      color: var(--accent);
+      font-weight:600;
+      margin-left: 9px;
+      opacity:.83;
+      letter-spacing:.03em;
+    }
+    .section-label { font-size:1.1em; color: #dacbff; letter-spacing:.1em; opacity:.81;}
+    .action-main {
+      background: linear-gradient(90deg,#3a55e8 0%,#6ad1e3 100%);
+      color: #fff;
+      font-weight: 790;
+      border-radius:14px;
+      padding: 14px 0 13px 0;
+      font-size:21px;
+      box-shadow:0 3px 32px #4950a966;
+      border:0;
+      margin-bottom:10px;
+      transition:transform .12s;
+    }
+    .action-main:active { transform: scale(.97);}
+    /* Misc tweaks */
+    ::selection{background: #ffeb88;color:#253;}
+    .tip { font-size:13px;color:var(--accent);margin-bottom:8px;}
+    .panel::-webkit-scrollbar{width:7px;background:rgba(56,70,120,0.12);}
+    .panel::-webkit-scrollbar-thumb{background:#3d4266;border-radius:5px;}
   </style>
 </head>
 <body>
   <div class="app">
     <div class="panel">
       <h1>Map Quiz Studio</h1>
-      <div class="row">
-        <button id="export">Export</button><button id="import">Import</button>
+      <div class="group">
+        <button id="export">Export</button>
+        <button id="import">Import</button>
         <button id="reset">Reset</button>
       </div>
       <hr />
-      <b>MAP IMAGE</b>
-      <div class="row">
+      <div class="heading">MAP IMAGE</div>
+      <div class="row group">
         <input type="file" id="imgInput" accept="image/*">
         <button id="fit">Fit to screen</button>
         <button id="removeImg">Remove image</button>
       </div>
-      <div id="imgTip" style="font-size:12px;color:var(--accent);margin-bottom:8px;">
+      <div class="tip group">
         Tip: upload your study map (PNG/JPG). In Author mode, click the map to place a pin for a selected term.
       </div>
-      <hr />
-      <b>MODES</b>
-      <div class="row">
+      <hr/>
+      <div class="heading">MODES</div>
+      <div class="row group">
         <button id="modeAuthor">Author <span class="shortcut">A</span></button>
         <button id="modeQuiz">Quiz <span class="shortcut">Q</span></button>
         <button id="modeFlash">Flashcards <span class="shortcut">F</span></button>
       </div>
-      <div class="row">
+      <div class="row group">
         <label for="tolerance">Tolerance:</label>
         <input type="range" id="tolerance" min="10" max="60" value="24" style="width:80px;">
         <span id="tolVal">24</span> px
       </div>
-      <hr />
-      <b>TERMS</b>
-      <input aria-label="Add a term (e.g., Red Sea)" id="addTerm" placeholder="Add a term..." style="width:80%;">
-      <button id="addTermBtn">Add</button>
-      <div style="margin:4px 0;">
+      <hr/>
+      <div class="heading">TERMS</div>
+      <div class="row group">
+        <input aria-label="Add a term (e.g., Red Sea)" id="addTerm" placeholder="Add a term...">
+        <button id="addTermBtn">Add</button>
+      </div>
+      <div class="row" style="margin-bottom:6px;">
         <button id="loadCountries">Load Middle East – Countries</button>
         <button id="loadFeatures">Load Middle East – Features</button>
         <button id="clearTerms">Clear terms</button>
       </div>
-      <div id="termsList"></div>
-      <hr />
-      <b>QUIZ CONTROLS</b>
+      <div id="termsList" class="group"></div>
+      <hr/>
+      <div class="heading">QUIZ CONTROLS</div>
+      <button id="start" class="action-main">Start / Shuffle <span class="shortcut">S</span></button>
       <div class="row">
-        <button id="start">Start / Shuffle <span class="shortcut">S</span></button>
         <button id="reveal">Reveal <span class="shortcut">R</span></button>
         <button id="undo">Undo <span class="shortcut">U</span></button>
         <button id="togglePins">Toggle pins</button>
       </div>
+      <div class="row"><span>Mode: <b id="modeStatus"></b></span></div>
       <div class="row">
-        <span>Mode: <b id="modeStatus"></b></span>
-      </div>
-      <div class="row">
-        <span>Score: <b id="score">0</b> / <span id="total">0</span></span>
+        <span>Score: <b id="score" class="quiz-num-main">0</b> / <span id="total" class="quiz-num-main">0</span></span>
         <span>Streak: <b id="streak">0</b></span>
       </div>
-      <div class="row"><span>Target: <b id="targetTerm">—</b></span></div>
+      <div class="row"><span>Target: <b id="targetTerm"></b></span></div>
       <div class="row"><button id="next" style="flex:1;">Next <span class="shortcut">N, Space</span></button></div>
     </div>
     <div class="canvas-panel">
@@ -152,40 +199,52 @@
     </div>
   </div>
   <script>
-    // === STATE
+    // === STATE/LOGIC
     let state = { img: null, pins: [], terms: [], mode: 'Author', tolerance: 24, quizOrder: [], quizIdx: 0, score: 0, streak: 0, pinsEnabled: true };
     const saveState = () => localStorage.setItem('studiemap', JSON.stringify(state));
-    const loadState = () => {
-      try { const x = JSON.parse(localStorage.getItem('studiemap')); if (x) Object.assign(state, x); } catch {}
-    };
+    const loadState = () => { try { const x = JSON.parse(localStorage.getItem('studiemap')); if (x) Object.assign(state, x); } catch {}};
     const clearState = () => { localStorage.removeItem('studiemap'); location.reload(); };
     const el = id => document.getElementById(id);
 
-    // === CANVAS
+    // CANVAS, STYLING + IMAGE
     let canvas = el('mapCanvas'), ctx = canvas.getContext('2d'), img = new window.Image();
+
     function fitCanvas() {
-      let calcW = window.innerWidth - 380;
-      let calcH = window.innerHeight - 50;
-      canvas.width = Math.max(600, calcW > 1100 ? 1100 : calcW);
-      canvas.height = Math.max(400, calcH > 800 ? 800 : calcH);
+      let calcW = window.innerWidth - 420, calcH = window.innerHeight - 60;
+      canvas.width = Math.max(750, Math.min(calcW, 1320));
+      canvas.height = Math.max(490, Math.min(calcH, 910));
       drawCanvas();
     }
     window.onresize = fitCanvas;
+
     function drawCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (state.img) { img.src = state.img; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); }
-      else { ctx.fillStyle = '#232a4a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#556'; ctx.font = '28px sans-serif'; ctx.fillText('No image', canvas.width/2-54, canvas.height/2);}
-      if (state.pinsEnabled && state.pins.length) state.pins.forEach(p=>drawPin(p.x,p.y,p.termIdx,false));
+      if (state.img) {
+        if (!img.src || img.src !== state.img) {
+          img.onload = drawCanvas;
+          img.src = state.img;
+          return; // wait for load to complete before drawing image
+        }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.fillStyle = '#232a4a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#7fa7fa77';
+        ctx.font = '28px sans-serif';
+        ctx.fillText('No image', canvas.width/2-66, canvas.height/2);
+      }
+      if (state.pinsEnabled && state.pins.length)
+        state.pins.forEach(p=>drawPin(p.x,p.y,p.termIdx,false));
     }
     function drawPin(x, y, idx, ghost) {
       ctx.save();
-      ctx.globalAlpha = ghost ? 0.7 : 1;
+      ctx.globalAlpha = ghost ? 0.73 : 1;
       ctx.beginPath();
-      ctx.arc(x, y, 13, 0, 2*Math.PI); ctx.fillStyle = ghost ? '#e7ecff77' : '#7aa2ff'; ctx.fill();
-      ctx.lineWidth = 3; ctx.strokeStyle = '#101428'; ctx.stroke();
-      ctx.font = '14px bold sans-serif'; ctx.fillStyle = '#18182b'; ctx.textAlign = 'center';
-      ctx.fillText(state.terms[idx]?.substr(0,2).toUpperCase()||'', x, y + 4); ctx.restore();
+      ctx.arc(x, y, 13, 0, 2*Math.PI); ctx.fillStyle = ghost ? '#e7ecff77' : '#5a92ff'; ctx.fill();
+      ctx.lineWidth = 3.2; ctx.strokeStyle = '#101428'; ctx.stroke();
+      ctx.font = '15px bold Segoe UI,sans-serif'; ctx.fillStyle = '#18182b'; ctx.textAlign = 'center';
+      ctx.fillText(state.terms[idx]?.substr(0,2).toUpperCase()||'', x, y + 6);
+      ctx.restore();
     }
     function setMode(m) { state.mode = m; el('modeStatus').textContent = m; saveState(); drawCanvas(); updateUI(); }
     ['modeAuthor','modeQuiz','modeFlash'].forEach((id,i) => el(id).onclick = () => setMode(['Author','Quiz','Flashcards'][i]));
@@ -194,9 +253,10 @@
     el('imgInput').onchange = e => {
       let f = e.target.files[0]; if (!f) return;
       let reader = new FileReader();
-      reader.onload = r => { state.img = r.target.result; saveState(); drawCanvas(); };
+      reader.onload = r => { state.img = r.target.result; img.onload = drawCanvas; img.src = state.img; saveState(); };
       reader.readAsDataURL(f);
     };
+    el('fit').onclick = fitCanvas;
     el('addTermBtn').onclick = () => { let v=el('addTerm').value.trim(); if(!v||state.terms.includes(v))return; state.terms.push(v); saveState(); el('addTerm').value=''; updateTerms(); };
     el('addTerm').onkeypress = e=>{ if(e.key=='Enter') el('addTermBtn').onclick(); };
     el('clearTerms').onclick = ()=>{ state.terms = []; state.pins = []; saveState(); updateTerms(); drawCanvas(); };
@@ -256,7 +316,7 @@
       }
     };
     function flash(node,color){
-      node.style.boxShadow = `0 0 0 6px ${color}77`;
+      node.style.boxShadow = `0 0 0 14px ${color}80`;
       setTimeout(()=>node.style.boxShadow='',350);
     }
     document.addEventListener('keydown',e=>{
@@ -293,17 +353,17 @@
     fitCanvas();
     updateTerms();
     updateUI();
-    if(state.img){ img.src=state.img; img.onload=drawCanvas; }
+    if(state.img){ img.onload = drawCanvas; img.src = state.img; }
     canvas.ondragover = e => { e.preventDefault(); canvas.style.outlineColor = "#7aa2ff"; };
-    canvas.ondragleave = e => { canvas.style.outlineColor = "#282c40"; };
+    canvas.ondragleave = e => { canvas.style.outlineColor = "#182639"; };
     canvas.ondrop = e => {
       e.preventDefault(); var dt = e.dataTransfer;
       if(dt.files && dt.files.length){
         let fr=new FileReader();
-        fr.onload= r => { state.img = r.target.result; img.src = state.img; saveState(); drawCanvas(); };
+        fr.onload= r => { state.img = r.target.result; img.onload = drawCanvas; img.src = state.img; saveState(); };
         fr.readAsDataURL(dt.files[0]);
       }
-      canvas.style.outlineColor = "#282c40";
+      canvas.style.outlineColor = "#182639";
     }
   </script>
 </body>
